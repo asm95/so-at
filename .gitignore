@@ -1,0 +1,8 @@
+# object files
+*.o
+
+# vscode settings
+*.vscode/
+
+# program itself
+es
