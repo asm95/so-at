@@ -63,26 +63,26 @@ void create_connections(int _id, char* _option){
         connections = malloc(sizeof(pid_t)*4);
 
         j = 0;
-        if((_id%4) == 0 ){
-            connections[j++] = _parent + (_id + 1);
-            connections[j++] = _parent + (_id + 3);
-        } else if(((_id%4) == 1) || ((_id%4) == 2)){
-            connections[j++] = _parent + (_id - 1);
-            connections[j++] = _parent + (_id + 1);
-        } else {
-            connections[j++] = _parent + (_id - 1);
-            connections[j++] = _parent + (_id - 3);
+        if((_id%4) == 0 ){                                          // The "left" nodes of the structure connect with:
+            connections[j++] = _parent + (_id + 1);                 // The nearest node; and
+            connections[j++] = _parent + (_id + 3);                 // The further node of its current level
+        } else if(((_id%4) == 1) || ((_id%4) == 2)){                // The "center" nodes of the structure connect with:
+            connections[j++] = _parent + (_id - 1);                 // The nearest node to its left; and
+            connections[j++] = _parent + (_id + 1);                 // The nearest node to its right on the same level
+        } else {                                                    // The "right" nodes of the structure connect with:
+            connections[j++] = _parent + (_id - 1);                 // The nearest node to its left; and
+            connections[j++] = _parent + (_id - 3);                 // The further node to its left on the same level
         }
 
-        if((_id-4) < 0)
-            connections[j++] = _parent + ((_id+12)%16);
-        else
-            connections[j++] = _parent + (_id-4);
+        if((_id-4) < 0)                                             // The "top" nodes
+            connections[j++] = _parent + ((_id+12)%16);             // Connect with the bottom nodes on the same column
+        else                                                        // The other nodes
+            connections[j++] = _parent + (_id-4);                   // Connect with the first top node to it
         
-        if((_id+4) > 15)
-            connections[j] = _parent + ((_id+4)%16);
-        else
-            connections[j] = _parent + (_id+4);
+        if((_id+4) > 15)                                            // The "bottom" nodes
+            connections[j] = _parent + ((_id+4)%16);                // Connect with the bottom node on the same column
+        else                                                        // The other nodes
+            connections[j] = _parent + (_id+4);                     // Connect with the first bottom node to it
 
         // Just for checking:
         printf("Process #%d\t(%d) is connected to: ", (getpid() - _parent)-1, getpid());
