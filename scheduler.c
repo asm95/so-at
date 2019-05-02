@@ -35,7 +35,7 @@
 void create_connections(int _id, char* _option){
     pid_t _parent = getppid(), *connections;
     int _xor;
-    int i, j;
+    int i, j, aux;
     // TODO
     if(strcmp(_option, FAT) == 0){
         printf("FAT TREE IS BEING ASSEMBLED!\n");
@@ -55,12 +55,40 @@ void create_connections(int _id, char* _option){
         // Just for checking:
         printf("Process #%d\t(%d) is connected to: ", (getpid() - _parent)-1, getpid());
         for(i = 0; i < 4; i++)
-            printf("%d ", connections[i]);
+            printf("%d ", (connections[i] - _parent)-1);
         printf("\n");
     } else {
-        printf("TORUS IS BEING ASSEMBLED!\n");
+        // printf("TORUS IS BEING ASSEMBLED!\n");
         // TODO
+        connections = malloc(sizeof(pid_t)*4);
+
+        j = 0;
+        if((_id%4) == 0 ){
+            connections[j++] = _parent + (_id + 1);
+            connections[j++] = _parent + (_id + 3);
+        } else if(((_id%4) == 1) || ((_id%4) == 2)){
+            connections[j++] = _parent + (_id - 1);
+            connections[j++] = _parent + (_id + 1);
+        } else {
+            connections[j++] = _parent + (_id - 1);
+            connections[j++] = _parent + (_id - 3);
+        }
+
+        if((_id-4) < 0)
+            connections[j++] = _parent + ((_id+12)%16);
+        else
+            connections[j++] = _parent + (_id-4);
         
+        if((_id+4) > 15)
+            connections[j] = _parent + ((_id+4)%16);
+        else
+            connections[j] = _parent + (_id+4);
+
+        // Just for checking:
+        printf("Process #%d\t(%d) is connected to: ", (getpid() - _parent)-1, getpid());
+        for(i = 0; i < 4; i++)
+            printf("%d ", (connections[i] - _parent));
+        printf("\n");
     }
 }
 
