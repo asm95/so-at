@@ -33,12 +33,14 @@
  */
 
 void create_connections(int _id, char* _option){
-    pid_t _parent = getppid(), *connections;
+    pid_t _parent, *connections;
     int _xor;
     int i, j, aux;
-    // TODO
+
+    _parent = getppid();
     if(strcmp(_option, FAT) == 0){
-        printf("FAT TREE IS BEING ASSEMBLED!\n");
+        // TODO
+        // Iniciando Fat Tree
     } else if(strcmp(_option, HYPER) == 0){
         connections = malloc(sizeof(pid_t)*4);
 
@@ -58,8 +60,6 @@ void create_connections(int _id, char* _option){
             printf("%d ", (connections[i] - _parent)-1);
         printf("\n");
     } else {
-        // printf("TORUS IS BEING ASSEMBLED!\n");
-        // TODO
         connections = malloc(sizeof(pid_t)*4);
 
         j = 0;
@@ -131,7 +131,6 @@ int main(int argc, char* argv[]){
 
     // child = malloc(sizeof(pid_t)*_struct);
     for(int i = 0; i < _struct; i++){                               // Creates the manager processes
-        // TODO
         _fork = fork();
         if(_fork == 0){                                             // Child executes
             _id = i;                                                // Needed to create the proper structure
@@ -142,9 +141,10 @@ int main(int argc, char* argv[]){
     }
 
     if(_fork == 0)
-        create_connections(_id, option);                           // Calls the routine to create the connections between processes
+        create_connections(_id, option);                            // Calls the routine to create the connections between processes
     else
-        delayed_scheduler();                                        // Calls the routine to wait for a program to be scheduled
+        // delayed_scheduler();                                        // Calls the routine to wait for a program to be scheduled
+        sleep(5);                                                   // Temporary
 
     return 0;
 }
