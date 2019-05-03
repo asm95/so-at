@@ -116,31 +116,31 @@ void create_fat_tree(pid_t _ppid, int _level){
         _fork = fork();                                                 // Creates the left node
         if(_fork == 0)                                                  // Child executes
             goto FORK;
-        else{
+        else{                                                           // Parent executes
             if(_level == 0){
-                connections[i++] = _fork;
-                connections[i++] = _fork;
+                connections[i++] = _fork;                               // Connects to the first child
+                connections[i++] = _fork;                               // Twice
             } else if(_level == 1){
-                connections[i++] = getppid();
-                connections[i++] = _fork;
+                connections[i++] = getppid();                           // Connects to the parent
+                connections[i++] = _fork;                               // Connects to the first child
             } else {
-                connections[i++] = getppid();
-                connections[i++] = _fork;
+                connections[i++] = getppid();                           // Connects to the parent
+                connections[i++] = _fork;                               // Connects to the first child
             }
         }
         
         _fork = fork();                                                 // Creates the right node
         if(_fork == 0)                                                  // Child executes
             goto FORK;
-        else{
+        else{                                                           // Parent executes
             if(_level == 0){
-                connections[i++] = _fork;
-                connections[i++] = _fork;
+                connections[i++] = _fork;                               // Connects to the second child
+                connections[i++] = _fork;                               // Twice
             } else if(_level == 1){
-                connections[i++] = getppid();
-                connections[i++] = _fork;
+                connections[i++] = getppid();                           // Connects to the parent
+                connections[i++] = _fork;                               // Connects to the second child
             } else {
-                connections[i++] = _fork;
+                connections[i++] = _fork;                               // Connects to the second child
             }
 
             // Just checking
@@ -163,9 +163,11 @@ void create_fat_tree(pid_t _ppid, int _level){
 
         FORK:
         _level++;
-        create_fat_tree(_ppid, _level);                             // Connects the left node of the next level
+        create_fat_tree(_ppid, _level);                                 // Connects the left node of the next level
     } else {
         connections[i++] = getppid();
+
+        // Just checking
         printf("Process #%d\t(%d) is connected to: ", id, getpid());
         for(int j = 0; j < 1; j++)
             printf("%d (%d) ", connections[j], (connections[j] - _ppid));
@@ -231,7 +233,7 @@ int main(int argc, char* argv[]){
         create_connections(_id, option);                                // Calls the routine to create the connections between processes
     else if((_fork == 0) && (strcmp(option, FAT) == 0)){
         _id = 0;
-        create_fat_tree(getppid(), 0);                            // 0 = _id of the first process; 0 = _level of the first node
+        create_fat_tree(getppid(), 0);                                  // 0 = _id of the first process; 0 = _level of the first node
         sleep(5);
     }
     else
