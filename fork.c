@@ -6,6 +6,7 @@
 
 
 #include "topology.h"
+#include "msg.h"
 
 void print_path(int *arr, int sz){
     for(int i=0; i<sz; i++){
@@ -34,12 +35,55 @@ void parent_manager(to_proxy *topo){
     print_path(path, path_sz);
 }
 
-int main(){
-    // manager process
-    // create child process
+void test_messages(){
+    int pid = fork();
+    int status;
+    int cid;
+    if (pid == 0){
+        printf("Waiting for channel...\n");
+        sleep(5);
+        cid = open_channel();
+        if (cid == -1){
+            printf("Failed to get channel. Exiting...\n");
+            exit(0);
+        }
+        printf("OK: got channel.\n");
+        printf("Sending message...\n");
+        if (send_packet(cid, 5) == 0){
+            printf("OK: Sent message\n");
+        }
+    } else {
+        cid = create_channel();
+        if (cid != -1){
+            msg_packet p;
+            printf("Waiting for messages...\n");
+            if (recv_packet(cid, &p) != -1){
+                printf("Got message: program %s, delay %u\n", p.prog_name, p.delay);
+            }
+        } else if (cid == -2){
+            printf("(W) Message key already exists\n");
+        }
+        printf("cid was %d\n", cid);
+        waitpid(pid, &status, 0);
+        if (cid != -1){
+            delete_channel(cid);
+        }
+    }
+}
+
+void test_channel(){
+    int cid = create_channel();
+    int oid = open_channel();
+    printf("cid, oid was %d,%d\n", cid, oid);
+    int stat = delete_channel(cid);
+    printf("stat %d\n", stat);
+}
+
+void test_spawn_processes(){
     printf("(I) Gerenciador de Processos\n");
 
     to_proxy *tp = topology_create(HYPER_C);
+    topology_clear(tp);
 
     int pid = fork();
     int status;
@@ -54,6 +98,10 @@ int main(){
 
         waitpid(pid, &status, 0);
     }
+}
+
+int main(){
+    test_messages();
 
     return 0;
 }
