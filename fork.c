@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -54,11 +55,15 @@ void exit_handler_child(int sig_id){
 void child_manager(to_proxy *topo){
     printf("(I) Initiated process (PID: %d)\n", getpid());
 
+    int rcv_ok = -1;
     channel_id = open_channel();
     msg_packet p;
     signal(SIGINT, exit_handler_child);
-    printf("(I) Listining to channel 0x2 (PID: %d)...\n", getpid());
-    msgrcv(channel_id, &p, sizeof(msg_packet), 0x2, 0); // block
+    printf("(I) Listining to slot 0x%02x on channel %d (PID: %d)...\n", pid_id, channel_id, getpid());
+    rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), pid_id, 0); // block
+    if (rcv_ok > 0){
+        printf("(I) Received msg '%s' at (PID: %d)\n", p.prog_name, getpid());
+    }
 }
 
 void parent_manager(to_proxy *topo, int *pid_vec){
@@ -69,8 +74,16 @@ void parent_manager(to_proxy *topo, int *pid_vec){
     path = topology_query(topo, 0x7, 0x9, &path_sz);
     print_path(path, path_sz);
 
-    int cid;
     msg_packet p;
+    p.delay = 5;
+    char *msg_set[3] = {"", "hello, joe", "hello, bear"};
+    for (int node_idx=1; node_idx < 3; node_idx++){
+        p.type = node_idx;
+        strcpy(p.prog_name, msg_set[node_idx]);
+        printf("(I) Sending message '%s' to 0x%02x via channel %d\n", p.prog_name, node_idx, channel_id);
+        msgsnd(channel_id, &p, sizeof(msg_packet) - sizeof(long), 0); // block until sent
+    }
+
     printf("(I) Waiting for messages on %d (PID: %d)\n", channel_id, pid_vec[0]);
     recv_packet(channel_id, &p);
 }
