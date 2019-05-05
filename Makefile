@@ -34,3 +34,6 @@ es: obj_dir $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
 	gcc $(OBJ_DIR)/topology.o \
 		$(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o \
 		$(OBJ_DIR)/fork.o -o es
+
+hello: hello.c
+	gcc hello.c -o hello
