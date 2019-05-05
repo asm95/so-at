@@ -7,7 +7,7 @@
 
 
 #include "topology.h"
-#include "msg.h"
+#include "msg/msg.h"
 
 void print_path(int *arr, int sz){
     for(int i=0; i<sz; i++){
@@ -174,7 +174,7 @@ void dummy(int sig_id){
     }
 }
 
-int main(){
+void test_msg_queue (){
     UnitTestData td;
 
     test_channel_creation();
@@ -200,9 +200,13 @@ int main(){
     alarm(td.parent_delay + 3);
     test_messages(&td);
    }
-   
 
    test_channel_close();
+
+}
+
+int main(){
+    test_msg_queue();
 
     return 0;
 }

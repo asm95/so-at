@@ -1,15 +1,20 @@
 .PHONY: all
 
+OBJ_DIR=obj
+
 all: es
 
-topology.o: topology.c
-	gcc --std=c99 -c topology.c -o topology.o
+obj_dir:
+	mkdir -p $(OBJ_DIR)
 
-msg.o: msg.c
-	gcc --std=c99 -c msg.c -o msg.o
+$(OBJ_DIR)/topology.o: topology.c
+	gcc --std=c99 -c topology.c -o $(OBJ_DIR)/topology.o
 
-fork.o: fork.c
-	gcc --std=c99 -c fork.c -o fork.o
+$(OBJ_DIR)/msg.o: msg/msg.c
+	gcc --std=c99 -c msg/msg.c -o $(OBJ_DIR)/msg.o
 
-es: topology.o msg.o fork.o
-	gcc topology.o  msg.o fork.o -o es
+$(OBJ_DIR)/fork.o: fork.c
+	gcc --std=c99 -c fork.c -o $(OBJ_DIR)/fork.o
+
+es: obj_dir $(OBJ_DIR)/topology.o $(OBJ_DIR)/msg.o $(OBJ_DIR)/fork.o
+	gcc $(OBJ_DIR)/topology.o $(OBJ_DIR)/msg.o $(OBJ_DIR)/fork.o -o es

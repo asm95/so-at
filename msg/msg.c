@@ -7,7 +7,7 @@
 
 #include <string.h>
 
-#include "common.h"
+#include "../common.h"
 #include "msg.h"
 
 
