@@ -49,5 +49,5 @@ int send_packet(int msg_id, uint delay){
 }
 
 int recv_packet(int msg_id, msg_packet *p){
-    msgrcv(msg_id, p, sizeof(msg_packet), 0x1, 0);
+    return msgrcv(msg_id, p, sizeof(msg_packet), 0x1, 0);
 }
