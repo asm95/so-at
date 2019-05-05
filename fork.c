@@ -5,9 +5,12 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include <sys/ipc.h>
+#include <sys/msg.h>
 
 #include "topology.h"
-#include "msg/tests.h"
+#include "msg/msg.h"
+
 
 void print_path(int *arr, int sz){
     for(int i=0; i<sz; i++){
@@ -18,16 +21,45 @@ void print_path(int *arr, int sz){
     }printf("\n");
 }
 
-void child_manager(to_proxy *topo){
-    printf("(I) Initiated %d process\n", getpid());
+#define NRO_PROC 3
 
-    int *path, path_sz;
-    printf("(I) Path from 0 to A using HyperCube is: ");
-    path = topology_query(topo, 0x0, 0xa, &path_sz);
-    print_path(path, path_sz);
+// it's a global variable because signal handlers doesn't provide any parameters
+int pid_vec[NRO_PROC];
+int pid_id, channel_id;
+
+void shutdown(){
+    // shutdown steps
+    // breaks topology but kills the current executing processes
+    printf("(I) Shutdown process initiated\n");
+    int status;
+    for (int id=1; id < NRO_PROC; id++){
+        // don't forget to do a waitpid on fork cus your process will turn into a zombie
+        // and zombies don't release their line in the process table!
+        // you can do a waitpid after the process exited
+        kill(pid_vec[id], SIGINT);
+        waitpid(pid_vec[id], &status, 0);
+    }
 }
 
-#define NRO_PROC 3
+void exit_handler_parent(int sig_id){
+    // will shutdown all programs and print the report
+    shutdown();
+    delete_channel(channel_id);
+}
+
+void exit_handler_child(int sig_id){
+    printf("(I) Exiting child (PID: %d)\n", getpid());
+}
+
+void child_manager(to_proxy *topo){
+    printf("(I) Initiated process (PID: %d)\n", getpid());
+
+    channel_id = open_channel();
+    msg_packet p;
+    signal(SIGINT, exit_handler_child);
+    printf("(I) Listining to channel 0x2 (PID: %d)...\n", getpid());
+    msgrcv(channel_id, &p, sizeof(msg_packet), 0x2, 0); // block
+}
 
 void parent_manager(to_proxy *topo, int *pid_vec){
     printf("(I) Parent process (PID: %d)\n", pid_vec[0]);
@@ -37,15 +69,10 @@ void parent_manager(to_proxy *topo, int *pid_vec){
     path = topology_query(topo, 0x7, 0x9, &path_sz);
     print_path(path, path_sz);
 
-    // shutdown process
-    // breaks topology but kills the current executing processes
-    int status;
-    for (int id=1; id < NRO_PROC; id++){
-        // don't forget to do a waitpid on fork cus your process will turn into a zombie
-        // and zombies don't release their line in the process table!
-        // you can do a waitpid after the process exited
-        waitpid(pid_vec[id], &status, 0);
-    }
+    int cid;
+    msg_packet p;
+    printf("(I) Waiting for messages on %d (PID: %d)\n", channel_id, pid_vec[0]);
+    recv_packet(channel_id, &p);
 }
 
 void test_spawn_processes(){
@@ -53,9 +80,7 @@ void test_spawn_processes(){
     printf("(I) Número de processos a serem criados: %d\n", NRO_PROC-1);
 
     to_proxy *tp = topology_create(HYPER_C);
-    
-
-    int pid_vec[NRO_PROC];
+    channel_id = create_channel();
 
     int pid;
     // 0 is the master node itself
@@ -63,6 +88,7 @@ void test_spawn_processes(){
         pid = fork();
         if (pid == 0){
             // child will break the for to avoid creating more processes
+            pid_id = id; // each child will have it's own internal ID
             break;
         } else {
             // parent will fill the pid table
@@ -74,6 +100,7 @@ void test_spawn_processes(){
         child_manager(tp);
     } else {
         pid_vec[0] = getpid();
+        signal(SIGINT, exit_handler_parent);
         parent_manager(tp, pid_vec);
     }
 
