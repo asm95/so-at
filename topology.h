@@ -9,7 +9,7 @@ typedef struct {
 } graph2D;
 
 typedef enum {
-    HYPER_C, TORUS, FAT_TREE
+    HYPER_C, TORUS, FAT_TREE, UNK_TO
 } to_types;
 
 typedef struct to_proxy_t to_proxy;

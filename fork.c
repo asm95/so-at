@@ -186,11 +186,11 @@ void close_channel(){
     }
 }
 
-void test_spawn_processes(){
+void test_spawn_processes(to_types scheduler_topo){
     printf("(I) Gerenciador de Processos\n");
     printf("(I) Número de processos a serem criados: %d\n", NRO_PROC-1);
 
-    to_proxy *tp = topology_create(FAT_TREE);
+    to_proxy *tp = topology_create(scheduler_topo);
     channel_id = create_channel();
 
     int pid;
@@ -220,9 +220,50 @@ void test_spawn_processes(){
     topology_clear(tp);
 }
 
-int main(){
-    //close_channel(); exit(0);
+#define CLI_SW_HYPER "-h"
+#define CLI_SW_TORUS "-t"
+#define CLI_SW_FAT   "-f"
 
-    test_spawn_processes();
+to_types process_args(int argc, char* argv[]){
+    // copycat from commit ea81598
+    char *option;
+
+    option = argv[1]; // Receives the Scheduler struct type
+
+    /*
+     * Checks if the scheduler was called with a argument.
+     * If there was no argument defining the type of structure to be used, the program is finished.
+     * If a argument was provided, the program needs to check if it's a valid argument. In case the
+     * entered argument is invalid, the program is finished, otherwise, the program continues it's
+     * execution.
+     */
+    if (argc < 2){
+        printf("(W) Run the scheduler with one of the three options: -h, -t or -f...\n");
+        return UNK_TO;
+    }
+    if (strcmp(CLI_SW_FAT, option) == 0){
+        return FAT_TREE;
+    }
+    if (strcmp(CLI_SW_HYPER, option) == 0){
+        return HYPER_C;
+    }
+    if (strcmp(CLI_SW_TORUS, option) == 0){
+        return TORUS;
+    }
+
+    printf("(E) Unreconized topology %s.\n", option);
+
+    return UNK_TO;
+}
+
+int main(int argc, char* argv[]){
+    to_types cli_topology;
+
+    cli_topology = process_args(argc, argv);
+    if (cli_topology == UNK_TO){
+        return 0;
+    }
+
+    test_spawn_processes(cli_topology);
     return 0;
 }
