@@ -1,5 +1,6 @@
 // id of message key
 #define MQ_ID 0x8349
+#define MAX_PROG_NAME 20
 
 typedef enum {
     AC_NOP, // do anything (undefined)
@@ -15,7 +16,7 @@ typedef struct {
     msg_action ac;
 
     // start a new program data
-    char prog_name[20];
+    char prog_name[MAX_PROG_NAME];
     unsigned int delay;
 
     // routing data
@@ -33,3 +34,6 @@ int delete_channel(int msg_id);
 
 int send_packet(int msg_id, unsigned int delay);
 int recv_packet(int msg_id, msg_packet *p);
+
+// new interface that is flexible
+int send_msg(int channel_id, msg_packet *p);

@@ -27,6 +27,7 @@ void print_path(int *arr, int sz){
 // it's a global variable because signal handlers doesn't provide any parameters
 int pid_vec[NRO_PROC];
 int pid_id, real_pid, channel_id, do_exit = 0;
+int job_id = 0;
 
 void shutdown(){
     // shutdown steps
@@ -97,12 +98,28 @@ void process_packet(msg_packet *p, to_proxy *topo){
     }
 }
 
+// we need to finish that thing
+#include "jobs.c"
+job_node *job_l;
+
+void add_program(msg_packet *p, int *finished_c){
+    if (finished_c >= 0){
+        // means there's someone executing
+        printf("(%3s) Enqueing job %d\n", "M", job_id);
+        insert_jl(job_l, create_job(p->delay, p->prog_name));
+    }
+}
+
 void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
     switch(p->ac){
         case AC_FP:
             printf("(%3s) Program finished from NID: 0x%02x\n", "M", p->pid_id);
             *finished_c += 1;
             break;
+        case AC_NP:
+            printf("(%3s) Received to execute new program '%s' in %d seconds\n", "M", p->prog_name, p->delay);
+            *finished_c = 0;
+
         default: break;
     }
 }
@@ -144,6 +161,8 @@ void spawn_program(msg_packet *p, to_proxy *topo){
 void parent_manager(to_proxy *topo, int *pid_vec){
     printf("(%3s) Parent process (PID: %d)\n", "M", pid_vec[0]);
 
+    job_l = new_jl();
+
     // check if communication channel exists
     if (channel_id <= 0){
         printf("(%3s) Failed to create channel %d. Exiting...\n", "M", MQ_ID);
@@ -157,10 +176,10 @@ void parent_manager(to_proxy *topo, int *pid_vec){
     msg_packet p;
     p.delay = 5;
 
-    int finished_c = 0;
+    int finished_c = -1;
 
     // order to execute command to each node
-    spawn_program(&p, topo);
+    // spawn_program(&p, topo);
 
     printf("(%3s) Waiting for messages on %d\n", "M", channel_id);
     int rcv_ok;
@@ -257,6 +276,9 @@ to_types process_args(int argc, char* argv[]){
 }
 
 int main(int argc, char* argv[]){
+    test_jl();
+    return 0;
+
     to_types cli_topology;
 
     cli_topology = process_args(argc, argv);

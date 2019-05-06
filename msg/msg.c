@@ -48,6 +48,10 @@ int send_packet(int msg_id, uint delay){
     return status;
 }
 
+int send_msg(int channel_id, msg_packet *p){
+    return msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0);
+}
+
 int recv_packet(int msg_id, msg_packet *p){
     return msgrcv(msg_id, p, sizeof(msg_packet), 0x1, 0);
 }

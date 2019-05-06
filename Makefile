@@ -17,9 +17,9 @@ clear:
 	rm es
 
 # Message Queue
-$(OBJ_DIR)/msg.o: msg/msg.c
+$(OBJ_DIR)/msg.o: msg/msg.c msg/msg.h common.h
 	gcc --std=c99 -c msg/msg.c -o $(OBJ_DIR)/msg.o
-$(OBJ_DIR)/msg_tests.o: msg/tests.c
+$(OBJ_DIR)/msg_tests.o: msg/tests.c msg/tests.h
 	gcc --std=c99 -c msg/tests.c -o $(OBJ_DIR)/msg_tests.o
 
 # includes all msg_queue modules
@@ -37,3 +37,6 @@ es: obj_dir $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
 
 hello: hello.c
 	gcc hello.c -o hello
+
+at: at.c $(OBJ_DIR)/msg.o
+	gcc at.c $(OBJ_DIR)/msg.o -o at
