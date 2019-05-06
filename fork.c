@@ -31,7 +31,7 @@ int pid_id, real_pid, channel_id, do_exit = 0;
 void shutdown(){
     // shutdown steps
     // breaks topology but kills the current executing processes
-    printf("(I) Shutdown process initiated\n");
+    printf("(%3s) Shutdown process initiated\n", "M");
     int status;
     for (int id=1; id < NRO_PROC; id++){
         // don't forget to do a waitpid on fork cus your process will turn into a zombie
@@ -50,7 +50,7 @@ void exit_handler_parent(int sig_id){
 }
 
 void exit_handler_child(int sig_id){
-    printf("(I) Exiting child (PID: %d)\n", getpid());
+    printf("(C%2d) Exiting child\n", pid_id);
     do_exit = 1;
 }
 
@@ -78,36 +78,37 @@ void route_print(msg_packet *p){
 void process_packet(msg_packet *p, to_proxy *topo){
     int next_node = route_walk(p);
     if (next_node >= 0){
-        printf("(I) Packet is for %d (PID: %d)\n", next_node, real_pid);
+        printf("(C%2d) Packet is for %d\n", pid_id, next_node);
         msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // forward packet
     } else
     if (next_node == -1){
-        printf("(I) Packet is for me! (PID: %d)\n", real_pid);
+        printf("(C%2d) Packet is for me!\n", pid_id);
         if (p->ac == AC_SP){
-            printf("(I) Message for spawn program named '%s'\n", p->prog_name);
+            printf("(C%2d) Message for spawn program named '%s'\n", pid_id, p->prog_name);
             sleep(2);
             // search for route
             p->routing_idx = topology_search(topo, 0x0, p->routing_path, 16); // search for master
             p->ac = AC_FP;
             p->pid_id = pid_id;
             next_node = route_walk(p); // check which node should I send first
-            printf("(I) Sending AC_FP to master via %d (PID: %d)\n", next_node, real_pid);
+            printf("(C%2d) Sending AC_FP to master via %d\n", pid_id, next_node);
             msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // forward packet
         }
     }
 }
 
-void process_packet_master(msg_packet *p, to_proxy *topo){
+void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
     switch(p->ac){
         case AC_FP:
-            printf("(M) Program finished from NID: 0x%02x\n", p->pid_id);
+            printf("(%3s) Program finished from NID: 0x%02x\n", "M", p->pid_id);
+            *finished_c += 1;
             break;
         default: break;
     }
 }
 
 void child_manager(to_proxy *topo){
-    printf("(I) Initiated process (PID: %d)\n", real_pid);
+    printf("(C%2d) Initiated process (PID: %d)\n", pid_id, real_pid);
     topology_init(topo, pid_id);
 
     int rcv_ok = -1;
@@ -115,7 +116,7 @@ void child_manager(to_proxy *topo){
     msg_packet p;
     signal(SIGINT, exit_handler_child);
     while(! do_exit){
-        printf("(I) Listining to slot 0x%02x on channel %d (PID: %d)...\n", pid_id+1, channel_id, real_pid);
+        printf("(C%2d) Listining to slot 0x%02x on channel %d...\n", pid_id, pid_id+1, channel_id);
         rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), pid_id+1, 0); // block
         if (rcv_ok > 0){
             process_packet(&p, topo);
@@ -123,12 +124,29 @@ void child_manager(to_proxy *topo){
     }
 }
 
+void spawn_program(msg_packet *p, to_proxy *topo){
+    // send message to all nodes to start a program
+    strcpy(p->prog_name, "hello");
+    p->ac = AC_SP; // packet will ask for nodes to spawn a program
+    int dest_node;
+    for (int node_idx=1; node_idx < NRO_PROC; node_idx++){
+        p->routing_idx = topology_search(topo, node_idx, p->routing_path, 16);
+        dest_node = route_walk(p);
+        if (dest_node <= 0){
+            printf("(%3s) Error on routing. Not a valid destination (%d)\n", "M", dest_node);
+            continue;
+        }
+        printf("(%3s) Sending packet to %d via %d\n", "M", node_idx, dest_node);
+        msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // block until sent
+    }
+}
+
 void parent_manager(to_proxy *topo, int *pid_vec){
-    printf("(I) Parent process (PID: %d)\n", pid_vec[0]);
+    printf("(%3s) Parent process (PID: %d)\n", "M", pid_vec[0]);
 
     // check if communication channel exists
     if (channel_id <= 0){
-        printf("(I) Failed to create chanel %d. Exiting...\n", MQ_ID);
+        printf("(%3s) Failed to create channel %d. Exiting...\n", "M", MQ_ID);
         shutdown();
         return;
     }
@@ -139,27 +157,23 @@ void parent_manager(to_proxy *topo, int *pid_vec){
     msg_packet p;
     p.delay = 5;
 
-    // order to execute command to each node
-    strcpy(p.prog_name, "hello");
-    p.ac = AC_SP; // packet will ask for nodes to spawn a program
-    int dest_node;
-    for (int node_idx=1; node_idx < NRO_PROC; node_idx++){
-        p.routing_idx = topology_search(topo, node_idx, p.routing_path, 16);
-        dest_node = route_walk(&p);
-        if (dest_node <= 0){
-            printf("(I) Error on routing. Not a valid destination (%d)\n", dest_node);
-            continue;
-        }
-        printf("(I) Sending packet to %d via %d\n", node_idx, dest_node);
-        msgsnd(channel_id, &p, sizeof(msg_packet) - sizeof(long), 0); // block until sent
-    }
+    int finished_c = 0;
 
-    printf("(I) Waiting for messages on %d (PID: %d)\n", channel_id, pid_vec[0]);
+    // order to execute command to each node
+    spawn_program(&p, topo);
+
+    printf("(%3s) Waiting for messages on %d\n", "M", channel_id);
     int rcv_ok;
     while(! do_exit){
+        if (finished_c >= 0){
+            // means we're waiting for processes to finish
+            if (finished_c == NRO_PROC-1){
+                printf("(%3s) Waiting for new processes\n", "M");
+            }
+        }
         rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0);
         if (rcv_ok > 0){
-            process_packet_master(&p, topo);
+            process_packet_master(&p, topo, &finished_c);
         }
     }
 }
@@ -168,7 +182,7 @@ void close_channel(){
     int oid = open_channel();
     int sts = delete_channel(oid);
     if (sts == 0){
-        printf("(I) Removed channel %d sucessfully!\n", oid);
+        printf("(%3s) Removed channel %d sucessfully!\n", "I", oid);
     }
 }
 
