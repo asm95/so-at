@@ -34,7 +34,7 @@
  * >> The | symbol means OR
  */
 
-void create_connections(int _id, char* _option){
+pid_t* create_connections(int _id, char* _option){
     pid_t _parent, *connections;
     int _xor;
     int i, j, aux;
@@ -92,9 +92,11 @@ void create_connections(int _id, char* _option){
             printf("%d ", (connections[i] - _parent));
         printf("\n");
     }
+
+    return connections;
 }
 
-void create_fat_tree(pid_t _ppid, int _level){
+pid_t* create_fat_tree(pid_t _ppid, int _level){
     // TODO
     int id, _fork, i = 0;
     pid_t *connections;
@@ -175,11 +177,13 @@ void create_fat_tree(pid_t _ppid, int _level){
     }
 
     ENDCONNECTION:
-    return;
+    return connections;
 }
 
 void manager_process(int _id, pid_t *connections){
     // TODO
+    sleep(5);
+    exit(1);
 }
 
 void delayed_scheduler(){
@@ -187,10 +191,12 @@ void delayed_scheduler(){
 }
 
 int main(int argc, char* argv[]){
-    int _struct, _fork, _id;
+    pid_t *connections, _parent;
+    int _struct, _fork, _id, _status;
     char *option;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
+    _parent = getpid();                                                 // Receives the Scheduler PID
 
     /*
      * Checks if the scheduler was called with a argument.
@@ -229,16 +235,25 @@ int main(int argc, char* argv[]){
         _fork = fork();                                                 // Creates the first node of the Fat Tree
     }
 
-    if((_fork == 0) && (strcmp(option, FAT) != 0))
-        create_connections(_id, option);                                // Calls the routine to create the connections between processes
+    if((_fork == 0) && (strcmp(option, FAT) != 0)){
+        connections = create_connections(_id, option);                  // Calls the routine to create the connections between processes
+        manager_process(_id, connections);                              // Starts the Manager
+    }
     else if((_fork == 0) && (strcmp(option, FAT) == 0)){
         _id = 0;
-        create_fat_tree(getppid(), 0);                                  // 0 = _id of the first process; 0 = _level of the first node
-        sleep(5);
+        create_fat_tree(getppid(), 0);                                    // 0 = _id of the first process; 0 = _level of the first node
+        manager_process((getpid() - _parent), connections);             // Starts the Manager
     }
-    else
+    else{
         // delayed_scheduler();                                         // Calls the routine to wait for a program to be scheduled
-        sleep(5);                                                       // Temporary
+        // sleep(5);                                                       // Temporary
+        if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0))
+            for(int i = 0; i < CHILDS; i++)
+                wait(&_status);
+        else
+            for(int i = 0; i < FATCHILDS; i++)
+                wait(&_status);
+    }
 
     return 0;
 }
