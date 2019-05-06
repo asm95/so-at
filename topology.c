@@ -374,8 +374,9 @@ int topology_search(to_proxy *el, uint end, int *arr, int arr_sz){
     // writes the route in the array
     uint ant, cur = end;
 
-    int idx = 0;
+    int idx = 1; // start at the 2nd spot
     arr_sz += -1; // never index on the size of the vector itself
+    arr[arr_sz] = cur; // first spot is reserverd
     while(1){
         ant = el->nodes->prev[cur];
         if (ant == -1){
@@ -386,7 +387,7 @@ int topology_search(to_proxy *el, uint end, int *arr, int arr_sz){
         idx += 1;
     }
 
-    return arr_sz - idx + 1;
+    return arr_sz - idx + 2; // ignore the starting node
 }
 
 void topology_clear(to_proxy *el){

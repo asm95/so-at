@@ -2,6 +2,7 @@
 #define MQ_ID 0x8349
 
 typedef enum {
+    AC_NOP, // do anything (undefined)
     AC_NP, // new program
     AC_SP, // spawn program
     AC_FP, // finished program
@@ -20,6 +21,9 @@ typedef struct {
     // routing data
     int routing_idx;
     int routing_path[16];
+
+    // finshed program data
+    unsigned int pid_id;
 
 } msg_packet;
 
