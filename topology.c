@@ -364,6 +364,31 @@ int * topology_query(to_proxy *el, uint start, uint end, int *arr_sz){
     return &arr[arr_rsz - idx + 1];
 }
 
+int topology_init(to_proxy *el, uint start){
+    // builds all routes from starting point
+    dijkstra(el->nodes, start);
+    return 1;
+}
+
+int topology_search(to_proxy *el, uint end, int *arr, int arr_sz){
+    // writes the route in the array
+    uint ant, cur = end;
+
+    int idx = 0;
+    arr_sz += -1; // never index on the size of the vector itself
+    while(1){
+        ant = el->nodes->prev[cur];
+        if (ant == -1){
+            break;
+        }
+        arr[arr_sz - idx] = ant;
+        cur = ant;
+        idx += 1;
+    }
+
+    return arr_sz - idx + 1;
+}
+
 void topology_clear(to_proxy *el){
     free_graph(el->nodes);
     free(el);

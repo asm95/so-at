@@ -1,10 +1,26 @@
 // id of message key
 #define MQ_ID 0x8349
 
+typedef enum {
+    AC_NP, // new program
+    AC_SP, // spawn program
+    AC_FP, // finished program
+} msg_action;
+
 typedef struct {
     long type;
+
+    // action itself
+    msg_action ac;
+
+    // start a new program data
     char prog_name[20];
     unsigned int delay;
+
+    // routing data
+    int routing_idx;
+    int routing_path[16];
+
 } msg_packet;
 
 int open_channel();

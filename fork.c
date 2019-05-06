@@ -69,6 +69,10 @@ void child_manager(to_proxy *topo){
 void parent_manager(to_proxy *topo, int *pid_vec){
     printf("(I) Parent process (PID: %d)\n", pid_vec[0]);
 
+    // will calculate routes for all nodes
+    topology_init(topo, 0); // parent ID is always 0
+    
+
     int *path, path_sz;
     printf("(I) Path from 7 to 9 using HyperCube is: ");
     path = topology_query(topo, 0x7, 0x9, &path_sz);
@@ -92,7 +96,7 @@ void test_spawn_processes(){
     printf("(I) Gerenciador de Processos\n");
     printf("(I) Número de processos a serem criados: %d\n", NRO_PROC-1);
 
-    to_proxy *tp = topology_create(HYPER_C);
+    to_proxy *tp = topology_create(FAT_TREE);
     channel_id = create_channel();
 
     int pid;

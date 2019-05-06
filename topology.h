@@ -18,5 +18,7 @@ graph2D* new_graph(unsigned int sz);
 void free_graph(graph2D *g);
 
 to_proxy    * topology_create(to_types t);
+int         topology_init(to_proxy *el, unsigned int start);
 int         * topology_query(to_proxy *el, unsigned int start, unsigned int end, int *arr_sz);
+int         topology_search(to_proxy *el, unsigned int end, int *arr, int arr_sz);
 void        topology_clear(to_proxy *el);
