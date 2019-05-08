@@ -10,6 +10,9 @@
 #include <string.h>         // Includes the String Library
 #include <fcntl.h>
 
+#include "msg/msg.h"
+#include "processQueue.h"
+
 typedef struct processTable {
     pid_t pid;              // Process ID
     uid_t uid;              // Group ID

@@ -180,6 +180,14 @@ pid_t* create_fat_tree(pid_t _ppid, int _level){
     return connections;
 }
 
+void killproc(){
+    int qid = open_channel();
+
+    printf("Closing channel...\n");
+    delete_channel(qid);
+    exit(1);
+}
+
 void manager_process(int _id, pid_t *connections){
     // TODO
     sleep(5);
@@ -187,73 +195,100 @@ void manager_process(int _id, pid_t *connections){
 }
 
 void delayed_scheduler(){
-    // TODO
+    // Under Construction
+    int qid;
+    msg_packet p;
+    _queue *queue;
+
+    signal(SIGINT, killproc);
+
+    printf("Attempting to create a msg queue...\n");
+    qid = create_channel();
+
+    if(qid >= 0){
+        printf("Channel was created! Channel ID: %d\n", qid);
+        createQueue(&queue);
+
+        while(1){
+            msgrcv(qid, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0);
+            insertProcess(&queue, p.name, p.delay);
+
+            printf("Job #\tProgram\t\tDelay\n");
+            printf("-----------------------------\n");
+            listProcesses(queue);
+            // system("pause");
+            // system("clear");
+        }
+    }
+    else
+        printf("Error on creating a new channel...\n");
 }
 
 int main(int argc, char* argv[]){
-    pid_t *connections, _parent;
-    int _struct, _fork, _id, _status;
-    char *option;
+    // pid_t *connections, _parent;
+    // int _struct, _fork, _id, _status;
+    // char *option;
 
-    option = argv[1];                                                   // Receives the Scheduler struct type
-    _parent = getpid();                                                 // Receives the Scheduler PID
+    // option = argv[1];                                                   // Receives the Scheduler struct type
+    // _parent = getpid();                                                 // Receives the Scheduler PID
 
-    /*
-     * Checks if the scheduler was called with a argument.
-     * If there was no argument defining the type of structure to be used, the program is finished.
-     * If a argument was provided, the program needs to check if it's a valid argument. In case the
-     * entered argument is invalid, the program is finished, otherwise, the program continues it's
-     * execution.
-     */
-    if(option == NULL){
-        printf("Run the scheduler with one of the three options: -h, -t or -f...\n");
-        return 0;
-    } else {
-        if((strcmp(HYPER, option) != 0) && (strcmp(TORUS, option) != 0) && (strcmp(FAT, option) != 0)){
-            printf("Invalid option! Try again with one of the three options: -h, -t or -f...\n");
-            return 0;
-        } else {
-            if(strcmp(FAT, option) == 0){                               // Fat Tree structure was selected. 15 children!
-                _struct = FATCHILDS;                                    // Prepares for 15 manager processes
-            } else {                                                    // Hypercube or Torus was selected. 16 children!
-                _struct = CHILDS;                                       // Prepares for 16 manager processes 
-            }
-        }
-    }
+    // /*
+    //  * Checks if the scheduler was called with a argument.
+    //  * If there was no argument defining the type of structure to be used, the program is finished.
+    //  * If a argument was provided, the program needs to check if it's a valid argument. In case the
+    //  * entered argument is invalid, the program is finished, otherwise, the program continues it's
+    //  * execution.
+    //  */
+    // if(option == NULL){
+    //     printf("Run the scheduler with one of the three options: -h, -t or -f...\n");
+    //     return 0;
+    // } else {
+    //     if((strcmp(HYPER, option) != 0) && (strcmp(TORUS, option) != 0) && (strcmp(FAT, option) != 0)){
+    //         printf("Invalid option! Try again with one of the three options: -h, -t or -f...\n");
+    //         return 0;
+    //     } else {
+    //         if(strcmp(FAT, option) == 0){                               // Fat Tree structure was selected. 15 children!
+    //             _struct = FATCHILDS;                                    // Prepares for 15 manager processes
+    //         } else {                                                    // Hypercube or Torus was selected. 16 children!
+    //             _struct = CHILDS;                                       // Prepares for 16 manager processes 
+    //         }
+    //     }
+    // }
 
-    if((strcmp(option, FAT) != 0)){
-        for(int i = 0; i < _struct; i++){                               // Creates the manager processes
-            _fork = fork();
-            if(_fork == 0){                                             // Child executes
-                _id = i;                                                // Needed to create the proper structure
-                break;                                                  // Childs won't create any processes
-            } else if(_fork == -1){                                     // Error on fork
-                // TODO
-            }
-        }
-    } else {
-        _fork = fork();                                                 // Creates the first node of the Fat Tree
-    }
+    // if((strcmp(option, FAT) != 0)){
+    //     for(int i = 0; i < _struct; i++){                               // Creates the manager processes
+    //         _fork = fork();
+    //         if(_fork == 0){                                             // Child executes
+    //             _id = i;                                                // Needed to create the proper structure
+    //             break;                                                  // Childs won't create any processes
+    //         } else if(_fork == -1){                                     // Error on fork
+    //             // TODO
+    //         }
+    //     }
+    // } else {
+    //     _fork = fork();                                                 // Creates the first node of the Fat Tree
+    // }
 
-    if((_fork == 0) && (strcmp(option, FAT) != 0)){
-        connections = create_connections(_id, option);                  // Calls the routine to create the connections between processes
-        manager_process(_id, connections);                              // Starts the Manager
-    }
-    else if((_fork == 0) && (strcmp(option, FAT) == 0)){
-        _id = 0;
-        create_fat_tree(getppid(), 0);                                    // 0 = _id of the first process; 0 = _level of the first node
-        manager_process((getpid() - _parent), connections);             // Starts the Manager
-    }
-    else{
-        // delayed_scheduler();                                         // Calls the routine to wait for a program to be scheduled
-        // sleep(5);                                                       // Temporary
-        if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0))
-            for(int i = 0; i < CHILDS; i++)
-                wait(&_status);
-        else
-            for(int i = 0; i < FATCHILDS; i++)
-                wait(&_status);
-    }
+    // if((_fork == 0) && (strcmp(option, FAT) != 0)){
+    //     connections = create_connections(_id, option);                  // Calls the routine to create the connections between processes
+    //     manager_process(_id, connections);                              // Starts the Manager
+    // }
+    // else if((_fork == 0) && (strcmp(option, FAT) == 0)){
+    //     _id = 0;
+    //     create_fat_tree(getppid(), 0);                                  // 0 = _id of the first process; 0 = _level of the first node
+    //     manager_process((getpid() - _parent), connections);             // Starts the Manager
+    // }
+    // else{
+    //     delayed_scheduler();                                            // Calls the routine to wait for a program to be scheduled
+    //     // sleep(5);                                                       // Temporary
+    //     if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0))
+    //         for(int i = 0; i < CHILDS; i++)
+    //             wait(&_status);
+    //     else
+    //         for(int i = 0; i < FATCHILDS; i++)
+    //             wait(&_status);
+    // }
+    delayed_scheduler();
 
     return 0;
 }
