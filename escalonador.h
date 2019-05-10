@@ -13,18 +13,8 @@
 #include "msg/msg.h"
 #include "processQueue.h"
 
-typedef struct processTable {
-    pid_t pid;              // Process ID
-    uid_t uid;              // Group ID
-    pid_t ppid;             // Process Parent ID
-    // CP: Fator de utilização da CPU
-    // PRI: Prioridade do processo
-    // NI: Parâmetro para o escalonador
-    // SZ: Tamanho do segmento de dados + pilha
-    // RSS: Memória real utilizada pelo processo
-    // WCHAN: Evento pelo qual o processo está esperando
-    // STAT: Status de execução do processo
-    // TT: Terminal associado ao processo
-    // TIME: Tempo de CPU (user + system)
-    // COMMAND: Arquivo executável que gerou o processo
-} processTable;
+void create_nodes(char *option);
+void create_fat_tree(pid_t _parent, int _level);
+void create_hypercube(pid_t _master);
+void create_torus(pid_t _master);                       
+void delayed_scheduler(); // Ongoing
