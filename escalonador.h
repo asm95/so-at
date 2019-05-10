@@ -13,8 +13,35 @@
 #include "msg/msg.h"
 #include "processQueue.h"
 
-void create_nodes(char *option);
-void create_fat_tree(pid_t _parent, int _level);
-void create_hypercube(pid_t _master);
-void create_torus(pid_t _master);                       
+typedef struct fTree {
+    pid_t id;                                       // ID of the process
+
+    int   lenght;                                   // Number of connections
+    pid_t *connects;                                // Array with the connections
+
+    struct fTree *left;                             // Left node
+    struct fTree *right;                            // Right node
+} fTree;
+
+typedef struct hyperTorus{
+    pid_t id;                                       // ID of the process
+
+    int   length;                                   // Number of connections
+    pid_t *connects;                                // Array with the connections
+
+    struct hyperTorus *next;                        // Next process
+} hyperTorus;
+
+void definesTree(fTree **_tree, int _parent, int *_node, int _level);
+void readTree(fTree *_tree);
+pid_t* get_fTreeConnection(fTree *_tree);
+
+void definesHyper(hyperTorus **_hyper, int _id);
+void readHyper(hyperTorus *ht);
+pid_t* get_hyperConnection(hyperTorus *_hyper);
+
+void definesTorus(hyperTorus **_torus, int _id);
+void readTorus(hyperTorus *_torus);
+pid_t* get_torusConnection(hyperTorus *_hyper);    
+
 void delayed_scheduler(); // Ongoing

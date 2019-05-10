@@ -34,128 +34,226 @@
  * >> The | symbol means OR
  */
 
-void create_hypercube(pid_t _master){
-    pid_t *connections;
+void definesTree(fTree **_tree, int _parent, int *_node, int _level){
+    fTree *t1;
+    int aux;
+
+    t1 = malloc(sizeof(fTree));
+    t1->id = *_node;
+    t1->left = NULL;
+    t1->right = NULL;
+
+    aux = (*_node)++;
+
+    if(_level < 3){
+        t1->lenght = 3;
+        t1->connects = malloc(sizeof(int)*(t1->lenght));
+
+        t1->connects[0] = _parent;                                      // Connects to the parent
+        t1->connects[1] = aux+1;                                        // Connects to the left child
+        if(_level == 0)                                                 // Connects to the right child on level 1
+            t1->connects[2] = aux+8;
+        else if(_level == 1)                                            // Connects to the right child on level 2
+            t1->connects[2] = aux+4;
+        else                                                            // Connects to the right child on level 3
+            t1->connects[2] = aux+2;
+        
+        (*_tree) = t1;                                                  // Sets the node
+        _level++;                                                       // Prepares for the next level
+        definesTree(&(*_tree)->left, aux, _node, _level);               // Builds to the left
+        definesTree(&(*_tree)->right, aux, _node, _level);              // Builds to the left
+    } else {
+        t1->lenght = 1;
+        t1->connects = malloc(sizeof(int));
+
+        t1->connects[0] = _parent;
+        (*_tree) = t1;
+    }
+
+    return;
+}
+
+void readTree(fTree *_tree){
+    if(_tree != NULL){
+        printf("NODE: %d\n", _tree->id);
+        printf("Connects to: ");
+        for(int i = 0; i < _tree->lenght; i++)
+            printf("%d ", _tree->connects[i]);
+        printf("\n");
+
+        readTree(_tree->left);
+        readTree(_tree->right);
+    }
+}
+
+pid_t* get_fTreeConnection(fTree *_tree){
+    pid_t *connections = NULL;
+
+    if(_tree != NULL){
+        if(_tree->id == getpid() - getppid() - 1){
+            connections = malloc(sizeof(pid_t)*(_tree->lenght));
+            for(int i = 0; i < _tree->lenght; i++)
+                connections[i] = _tree->connects[i];
+        } else {
+            connections = get_fTreeConnection(_tree->left);
+            if(connections != NULL)
+                goto RETURN;
+            connections = get_fTreeConnection(_tree->right);
+        }
+    }
+
+    RETURN:
+    return connections;
+}
+
+void definesHyper(hyperTorus **_hyper, int _id){
+    hyperTorus *h1, *h2;
     int i, j, _xor;
-    int _id = getpid() - _master - 1;
+
+    h1 = malloc(sizeof(hyperTorus));
+    h1->id = _id;
 
     if(_id == 0){
-        connections = malloc(sizeof(pid_t)*5);
-        connections[4] = _master;
-    } else
-        connections = malloc(sizeof(pid_t)*4);
+        h1->length = 5;
+        h1->connects = malloc(sizeof(pid_t)*(h1->length));
+        h1->connects[4] = -1;
+    } else{
+        h1->length = 4;
+        h1->connects = malloc(sizeof(pid_t)*(h1->length));
+    }
     for(i = 0, j = 0; i < CHILDS; i++){                                 // Checks between all the children to see the correct connections
         if(i != _id){                                                   // Doesn't check itself
             _xor = _id^(i);                                             // XOR operation to check connection
-            if((_xor == 1) || (_xor == 2) || (_xor == 4) || (_xor == 8)){   // Only 1-bit of difference: Connect
-                connections[j] = _master + (i+1);                       // Set the connection between 2 processes using the PID
-                j++;                                                    // Prepares for the next connection
-            }
+            if((_xor == 1) || (_xor == 2) || (_xor == 4) || (_xor == 8))// Only 1-bit of difference: Connect
+                h1->connects[j++] = i;                                  // Set the connection between 2 processes using the PID
         }
     }
 
-    // Just for checking:
-    sleep(_id);
-    printf("Process #%d\t(%d) is connected to: ", (getpid() - _master)-1, getpid());
-    for(i = 0; i < 4; i++)
-        printf("%d ", (connections[i] - _master)-1);
-    printf("\n");
-
-    // Send the data to the scheduler. How?
+    if((*_hyper) == NULL)
+        *_hyper = h1;
+    else{
+        h2 = *_hyper;
+        while(h2->next != NULL)
+            h2 = h2->next;
+        h2->next = h1;
+    }
 }
 
-void create_torus(pid_t _master){
-    pid_t *connections;
-    int i, j;
-    int _id = getpid() - _master - 1;
+void readHyper(hyperTorus *_hyper){
+    hyperTorus *h1;
 
-    if(_id == 0){
-        connections = malloc(sizeof(pid_t)*5);
-        connections[4] = _master;
-    } else
-        connections = malloc(sizeof(pid_t)*4);
+    h1 = _hyper;
+    while(h1 != NULL){
+        printf("Process #%d is connected to: ", h1->id);
+        for(int i = 0; i < h1->length; i++)
+            printf("%d ", h1->connects[i]);
+        printf("\n");
+
+        h1 = h1->next;
+    }
+}
+
+pid_t* get_hyperConnection(hyperTorus *_hyper){
+    hyperTorus *h1;
+    pid_t *connections;
+
+    h1 = _hyper;
+    while(h1 != NULL){
+        if(h1->id == getpid() - getppid() - 1){
+            connections = malloc(sizeof(pid_t)*(h1->length));
+            for(int i = 0; i < h1->length; i++)
+                connections[i] = h1->connects[i];
+
+            break;
+        }
+
+        h1 = h1->next;
+    }
+
+    return connections;
+}
+
+void definesTorus(hyperTorus **_torus, int _id){
+    hyperTorus *t1, *t2;
+    int i, j;
+
+    t1 = malloc(sizeof(hyperTorus));
+    t1->id = _id;
+    
+    if(_id == 0)
+        t1->length = 5;
+    else
+        t1->length = 4;
+
+    t1->connects = malloc(sizeof(int)*(t1->length));
 
     j = 0;
-    if((_id%4) == 0 ){                                              // The "left" nodes of the structure connect with:
-        connections[j++] = _master + (_id + 1);                     // The nearest node; and
-        connections[j++] = _master + (_id + 3);                     // The further node of its current level
-    } else if(((_id%4) == 1) || ((_id%4) == 2)){                    // The "center" nodes of the structure connect with:
-        connections[j++] = _master + (_id - 1);                     // The nearest node to its left; and
-        connections[j++] = _master + (_id + 1);                     // The nearest node to its right on the same level
-    } else {                                                        // The "right" nodes of the structure connect with:
-        connections[j++] = _master + (_id - 1);                     // The nearest node to its left; and
-        connections[j++] = _master + (_id - 3);                     // The further node to its left on the same level
+    if(_id == 0)
+        t1->connects[j++] = -1;                                         // Connects to the Scheduler
+
+    if((_id%4) == 0 ){                                                  // The "left" nodes of the structure connect with:
+        t1->connects[j++] = _id + 1;                                    // The nearest node; and
+        t1->connects[j++] = _id + 3;                                    // The further node of its current level
+    } else if(((_id%4) == 1) || ((_id%4) == 2)){                        // The "center" nodes of the structure connect with:
+        t1->connects[j++] = _id - 1;                                    // The nearest node to its left; and
+        t1->connects[j++] = _id + 1;                                    // The nearest node to its right on the same level
+    } else {                                                            // The "right" nodes of the structure connect with:
+        t1->connects[j++] = _id - 1;                                    // The nearest node to its left; and
+        t1->connects[j++] = _id - 3;                                    // The further node to its left on the same level
     }
 
-    if((_id-4) < 0)                                                 // The "top" nodes
-        connections[j++] = _master + ((_id+12)%16);                 // Connect with the bottom nodes on the same column
-    else                                                            // The other nodes
-        connections[j++] = _master + (_id-4);                       // Connect with the first top node to it
+    if((_id-4) < 0)                                                     // The "top" nodes
+        t1->connects[j++] = (_id+12)%16;                                // Connect with the bottom nodes on the same column
+    else                                                                // The other nodes
+        t1->connects[j++] = _id-4;                                      // Connect with the first top node to it
     
-    if((_id+4) > 15)                                                // The "bottom" nodes
-        connections[j] = _master + ((_id+4)%16);                    // Connect with the bottom node on the same column
-    else                                                            // The other nodes
-        connections[j] = _master + (_id+4);                         // Connect with the first bottom node to it
+    if((_id+4) > 15)                                                    // The "bottom" nodes
+        t1->connects[j] = (_id+4)%16;                                   // Connect with the bottom node on the same column
+    else                                                                // The other nodes
+        t1->connects[j] = _id+4;                                        // Connect with the first bottom node to it
 
-    // Just for checking:
-    sleep(_id);
-    printf("Process #%d\t(%d) is connected to: ", (getpid() - _master)-1, getpid());
-    for(i = 0; i < 4; i++)
-        printf("%d ", (connections[i] - _master));
-    printf("\n");
+    if((*_torus) == NULL)
+        *_torus = t1;
+    else{
+        t2 = *_torus;
+        while(t2->next != NULL)
+            t2 = t2->next;
+        t2->next = t1;
+    }
 }
 
-void create_fat_tree(pid_t _ppid, int _level){
-    int id, _fork, i = 0;
+void readTorus(hyperTorus *_torus){
+    hyperTorus *t1;
+
+    t1 = _torus;
+    while(t1 != NULL){
+        printf("Process #%d is connected to: ", t1->id);
+        for(int i = 0; i < t1->length; i++)
+            printf("%d ", t1->connects[i]);
+        printf("\n");
+
+        t1 = t1->next;
+    }
+}
+
+pid_t* get_torusConnection(hyperTorus *_torus){
+    hyperTorus *t1;
     pid_t *connections;
 
-    id = getpid() - _ppid - 1;
+    t1 = _torus;
+    while(t1 != NULL){
+        if(t1->id == getpid() - getppid() - 1){
+            connections = malloc(sizeof(pid_t)*(t1->length));
+            for(int i = 0; i < t1->length; i++)
+                connections[i] = t1->connects[i];
 
-    if(_level < 3)                                                      // Defines the number of connections for nodes at level 0, 1 and 2
-        connections = malloc(sizeof(pid_t)*3);
-    else                                                                // Defines the number of connections for nodes at level 3
-        connections = malloc(sizeof(pid_t)*1);
-        
-    connections[i++] = getppid();                                       // Connects to the Scheduler/parent
-
-    if(_level < 3){
-        _fork = fork();                                                 // Creates the left node
-        if(_fork == 0)                                                  // Child executes
-            goto FORK;
-        else                                                            // Parent executes
-            connections[i++] = _fork;                                   // Connects to the left child
-        
-        _fork = fork();                                                 // Creates the right node
-        if(_fork == 0)                                                  // Child executes
-            goto FORK;
-        else{                                                           // Parent executes
-            connections[i] = _fork;                                     // Connects to the right child
-
-            // Just checking
-            sleep(id);
-            printf("Process #%d\t(%d) is connected to: ", id, getpid());
-            for(int j = 0; j < 3; j++)
-                printf("%d (%d) ", connections[j], (connections[j] - _ppid) -1);
-            printf("\n");
-            goto ENDCONNECTION;
+            break;
         }
 
-        FORK:
-        _level++;
-        create_fat_tree(_ppid, _level);                                 // Creates and verifies the next level of the fat tree structure
-    } else {
-        // Just checking
-        sleep(id);
-        printf("Process #%d\t(%d) is connected to: ", id, getpid());
-        for(int j = 0; j < 1; j++)
-            printf("%d (%d) ", connections[j], (connections[j] - _ppid));
-        printf("\n");
+        t1 = t1->next;
     }
 
-    ENDCONNECTION:
-    // Needs to send the connections upstream. How?
-    sleep(16);
-    // return;
+    return connections;
 }
 
 void killproc(){
@@ -203,9 +301,11 @@ void delayed_scheduler(){
 }
 
 int main(int argc, char* argv[]){
-    pid_t **connections, _parent;
-    int   _struct, _fork, _id, _status;
+    pid_t *connections, _parent;
+    int   _struct, _fork, _id, _status, aux = 0;
     char  *option;
+    fTree *ft = NULL;
+    hyperTorus *ht = NULL;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
     _parent = getpid();                                                 // Receives the Scheduler PID
@@ -227,41 +327,55 @@ int main(int argc, char* argv[]){
         } else {
             if(strcmp(FAT, option) == 0){                               // Fat Tree structure was selected. 15 children!
                 _struct = FATCHILDS;                                    // Prepares for 15 manager processes
+                definesTree(&ft, -1, &aux, 0);                           // Defines the Fat Tree structure
+                // readTree(ft);                                           // Just for debug!!
             } else {                                                    // Hypercube or Torus was selected. 16 children!
-                _struct = CHILDS;                                       // Prepares for 16 manager processes 
+                _struct = CHILDS;                                       // Prepares for 16 manager processes
+                if(strcmp(option, TORUS) == 0){
+                    for(int i = 0; i < CHILDS; i++)
+                        definesTorus(&ht, i);                           // Defines the Torus structure
+                    // readTorus(ht);                                      // Just for debug!!
+                } else{
+                    for(int i = 0; i < CHILDS; i++)
+                        definesHyper(&ht, i);                           // Defines the Hypercube structure
+                    // readHyper(ht);                                      // Just for debug!!
+                }
             }
         }
     }
 
-    if((strcmp(option, FAT) != 0)){
-        for(int i = 0; i < _struct; i++){                               // Creates the manager processes
-            _fork = fork();
-            if(_fork == 0)
-                break;
-            if(_fork == -1){                                            // Error on fork
-                printf("Error while creating a new process...\n");
-                exit(1);
-            }
-        }
-    } else {
-        _fork = fork();                                                 // Creates the first node of the Fat Tree
-        if(_fork == -1){                                                // Error on fork
+    for(int i = 0; i < _struct; i++){                                   // Creates the manager processes
+        _fork = fork();
+        if(_fork == 0)                                                  // Childs executes
+            break;
+        else if(_fork == -1){                                           // Error on fork
             printf("Error while creating a new process...\n");
+            for(int j = 1; j <= i; j++)                                 // Loops through every process already created
+                kill(getpid()+j, SIGKILL);                              // ... And kills it.
             exit(1);
         }
     }
 
     if((_fork == 0) && (strcmp(option, HYPER) == 0)){
-        // TODO
-        create_hypercube(getppid());                                    // Verify each process connections on the hypercube structure
+        connections = get_hyperConnection(ht);                          // Verify each process connections on the hypercube structure
+        printf("Connections of %d: ", getpid() - getppid() - 1);
+        for(int i = 0; i < 5; i++)
+            printf("%d ", connections[i]);
+        printf("\n");
         exit(0);
-    } else if(((_fork == 0) && (strcmp(option, TORUS) == 0))){
-        // TODO
-        create_torus(getppid());                                        // Verify each process connections on the torus structure
+    } else if((_fork == 0) && (strcmp(option, TORUS) == 0)){
+        connections = get_torusConnection(ht);                          // Verify each process connections on the torus structure
+        printf("Connections of %d: ", getpid() - getppid() - 1);
+        for(int i = 0; i < 5; i++)
+            printf("%d ", connections[i]);
+        printf("\n");
         exit(0);
     } else if((_fork == 0) && (strcmp(option, FAT) == 0)){
-        // TODO
-        create_fat_tree(getppid(), 0);                                  // Creates and verifies the connections on the fat tree structure
+        connections = get_fTreeConnection(ft);                          // Creates and verifies the connections on the fat tree structure
+        printf("Connections of %d: ", getpid() - getppid() - 1);
+        for(int i = 0; i < 3; i++)
+            printf("%d ", connections[i]);
+        printf("\n");
         exit(0);
     }
     else{
