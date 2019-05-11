@@ -9,4 +9,4 @@ es
 *.out
 
 # Detalhes
-deleteMQ.*
+deleteMQ.c
