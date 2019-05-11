@@ -11,8 +11,8 @@ int create_channel();
 int open_channel();
 int delete_channel(int msg_id);
 
-int send_packet();
-int recv_packet();
+// int send_packet();
+// int recv_packet();
 
 typedef struct msg_packet {
     long type;                  // Defines the message type

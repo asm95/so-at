@@ -7,3 +7,6 @@
 # program itself
 es
 *.out
+
+# Detalhes
+deleteMQ.*

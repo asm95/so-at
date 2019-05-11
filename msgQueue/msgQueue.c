@@ -1,4 +1,4 @@
-#include "msg.h"
+#include "msgQueue.h"
 
 int create_channel(){
     int msg_id = msgget(MQ_ID, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
