@@ -3,10 +3,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "msg/msg.h"
+#include "msgQueue/msgQueue.h"
 
 int main(int argc, char *argv[]){
-    int msg_id = open_channel();
+    int msg_id = get_channel();
     char *program;
 
     if(msg_id >= 0){

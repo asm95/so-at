@@ -27,8 +27,8 @@ int create_channel(){
     return msg_id;              // Returns the channel ID
 }
 
-int open_channel(){
-    int msg_id = msgget(MQ_ID, S_IWUSR);
+int get_channel(){
+    int msg_id = msgget(MQ_ID, S_IWUSR | S_IRUSR);
 
     return msg_id;
 }

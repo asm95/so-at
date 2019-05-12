@@ -7,16 +7,18 @@
 
 #define MQ_ID 0x8349            // Channel for communication
 
-int create_channel();
-int open_channel();
-int delete_channel(int msg_id);
-
-// int send_packet();
-// int recv_packet();
-
 typedef struct msg_packet {
     long type;                  // Defines the message type
 
     char name[256];             // Program name for the scheduler
     int  delay;                 // Delay (in seconds) for execution
+
+    int _mdst;                   // ID of manager destination
 } msg_packet;
+
+int create_channel();
+int get_channel();
+int delete_channel(int msg_id);
+
+int send_packet();
+// int recv_packet();

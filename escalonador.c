@@ -35,17 +35,31 @@
 char *option;
 
 void shutdown(){
-    int qid = open_channel();
+    int status;
+    int qid = get_channel();
 
     printf("\nClosing channel...\n");
     delete_channel(qid);
+    
+    if(strcmp(option, FAT) == 0)
+        for(int i = 0; i < FATCHILDS; i++){
+            kill(getpid() + (i+1), SIGQUIT);
+            wait(&status);                                              // Waits for all the children
+        }
+    else
+        for(int i = 0; i < CHILDS; i++){
+            kill(getpid() + (i+1), SIGQUIT);
+            wait(&status);                                              // Waits for all the children
+        }
+        
     exit(0);
 }
 
 void delayed_scheduler(void *connections){
     // Under Construction
-    int qid;
-    msg_packet p;
+    int qid, enviado, recebido;
+    long type;
+    msg_packet p, *q;
     _queue *queue;
     hyperTorus *ht;
     fTree *ft;
@@ -54,11 +68,11 @@ void delayed_scheduler(void *connections){
 
     if(strcmp(option, HYPER) == 0 || strcmp(option, TORUS) == 0){       // Gets the Hypercube or Torus structure
         ht = (hyperTorus*)connections;
-        readHyperTorus(ht);
+        // readHyperTorus(ht);                                             // Debug only!
     }
     else{                                                               // Gets the Fat Tree structure
         ft = (fTree*)connections;
-        readTree(ft);
+        // readTree(ft);                                                   // Debug only!
     }
 
     printf("Attempting to create a msg queue...\n");
@@ -75,8 +89,22 @@ void delayed_scheduler(void *connections){
             printf("Job #\tProgram\t\tDelay\n");
             printf("-----------------------------\n");
             listProcesses(queue);                                       // Prints the process queue
-            // system("pause");
-            // system("clear");
+            
+            if(strcmp(option, FAT) == 0){
+                for(int i = 0; i < FATCHILDS; i++){
+                    q = malloc(sizeof(msg_packet));
+                    q->type  = 0x2;
+                    strcpy(q->name, p.name);
+                    q->delay = p.delay;
+                    q->_mdst = i;
+
+                    enviado = msgsnd(qid, q, sizeof(msg_packet), 0);
+
+                    free(q);
+                }
+            } else {
+                //
+            }
         }
     }
     else
@@ -140,37 +168,22 @@ int main(int argc, char* argv[]){
         }
     }
 
-    if((_fork == 0) && (strcmp(option, HYPER) == 0)){
-        connections = get_htConnection(ht);                          // Verify each process connections on the hypercube structure
-        // readConnections(connections);                                   // Just debug!!
-        exit(0);
-    } else if((_fork == 0) && (strcmp(option, TORUS) == 0)){
-        connections = get_htConnection(ht);                          // Verify each process connections on the torus structure
-        // readConnections(connections);                                   // Just debug!!
-        exit(0);
-    } else if((_fork == 0) && (strcmp(option, FAT) == 0)){
-        connections = get_fTreeConnection(ft);                          // Creates and verifies the connections on the fat tree structure
-        // readConnections(connections);                                   // Just debug!!
-        exit(0);
-    }
-
     if(_fork == 0){
-        manager_process((getpid() - getppid() - 1), connections);
-        exit(0);
-    }
-    else{
         if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0)){
+            connections = get_htConnection(ht);                         // Verifies each process connections on the Hypercube/Torus structure
+            // readConnections(connections);                               // Just debug!!
+        } else {
+            connections = get_fTreeConnection(ft);                      // Verifies each process connections on the Fat Tree structure
+            // readConnections(connections);                               // Just debug!!
+        }
+
+        sleep(1);
+        manager_process((getpid() - getppid() - 1), connections);       // Manager routine
+    } else{
+        if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0))
             delayed_scheduler((void*)ht);                               // Calls the Delayed Scheduler Routine
-
-            for(int i = 0; i < CHILDS; i++)
-                wait(&_status);                                         // Calls the routine to wait for a program to be scheduled
-        }
-        else{
+        else
             delayed_scheduler((void*)ft);                               // Calls the Delayed Scheduler Routine
-
-            for(int i = 0; i < FATCHILDS; i++)
-                wait(&_status);                                         // Calls the routine to wait for a program to be scheduled
-        }
     }
 
     exit(0);

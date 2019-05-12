@@ -8,7 +8,9 @@
 #include <signal.h>         // Includes the Signal definitions
 #include <string.h>         // Includes the String Library
 
-#include "msgQueue/msgQueue.h"
+#ifdef _MSG_QUEUE_H
+    #include "msgQueue/msgQueue.h"
+#endif
 #include "dataStructures.h"
 #include "managerProcess.h"
 
