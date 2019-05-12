@@ -81,6 +81,23 @@ job_node * create_job(int delay, char *prog_name){
     el->next = NULL;
 }
 
+job_node * pop_front(job_node **head){
+    // the tip of list will point to the next element
+    // the first element is then returned
+    // it's job of the programmer to delete the element afterwareds with free
+
+    // when list is empty
+    if (*head == NULL){
+        return NULL;
+    }
+
+    job_node *el = *head;
+
+    *head = (*head)->next;
+
+    return el;
+}
+
 int get_jl_sz(job_node *head){
     int sz = 0;
     while(head){
@@ -97,17 +114,31 @@ void print_jl(job_node *head){
     }printf("\n");
 }
 
-void test_jl(){
-    printf("(I) New job list should have length 0\n");
-    job_node *main_l = new_jl();
-    printf("(I) len of: %d\n", get_jl_sz(main_l));
+void print_list_sz(job_node *head, char *list_name){
+    printf("(I) len of %s: %d\n", list_name, get_jl_sz(head));
+}
 
+void test_jl(){
+    char *list_name = "main_l";
+    job_node *main_l, *el;
+
+    main_l = new_jl();
+    printf("(I) New job list should have length 0\n");
+    print_list_sz(main_l, list_name);
+
+    printf("(I) Inserting some elements in the list...\n");
     main_l = insert_jl(main_l, create_job(5, "call-me-cool"));
     main_l = insert_jl(main_l, create_job(2, "call-me-crazy"));
     main_l = insert_jl(main_l, create_job(6, "whatever-works-for-u"));
     main_l = insert_jl(main_l, create_job(1, "hey"));
     print_jl(main_l);
-    printf("(I) len of: %d\n", get_jl_sz(main_l));
+    print_list_sz(main_l, list_name);
+    printf("(I) Removing a element from the list...\n");
+    el = pop_front(&main_l);
+    free(el);
+    print_jl(main_l);
+    print_list_sz(main_l, list_name);
+    printf("(I) Deleting the list...\n");
     main_l = delete_jl(main_l);
-    printf("(I) len of: %d\n", get_jl_sz(main_l));
+    print_list_sz(main_l, list_name);
 }

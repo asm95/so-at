@@ -102,12 +102,75 @@ void process_packet(msg_packet *p, to_proxy *topo){
 #include "jobs.c"
 job_node *job_l;
 
-void add_program(msg_packet *p, int *finished_c){
-    if (finished_c >= 0){
-        // means there's someone executing
-        printf("(%3s) Enqueing job %d\n", "M", job_id);
-        insert_jl(job_l, create_job(p->delay, p->prog_name));
+int finished_c = -2;
+
+void alarm_handler_parent(int sigid){
+    // happens when a program will execute now after delay
+    finished_c = -1;
+}
+
+void spawn_program(msg_packet *p, to_proxy *topo){
+    p->ac = AC_SP; // packet will ask for nodes to spawn a program
+    int dest_node;
+    for (int node_idx=1; node_idx < NRO_PROC; node_idx++){
+        p->routing_idx = topology_search(topo, node_idx, p->routing_path, 16);
+        dest_node = route_walk(p);
+        if (dest_node <= 0){
+            printf("(%3s) Error on routing. Not a valid destination (%d)\n", "M", dest_node);
+            continue;
+        }
+        printf("(%3s) Sending packet to %d via %d\n", "M", node_idx, dest_node);
+        msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // block until sent
     }
+}
+
+void add_program(msg_packet *p, to_proxy *topo, int *finished_c){
+    // very strict function, other values will have no effect under the scheduler
+    // i.e. bad packets are discarded
+
+    int list_sz = get_jl_sz(job_l);
+
+    if (list_sz < 0){
+        printf("(%3s) Job list seems to be corruped. Please panic!\n", "(MW)");
+        return;
+    }
+
+    if (list_sz == 0){
+        // alarm is set when nobody is on the list
+        int seconds = p->delay;
+        if (seconds < 0){
+            printf("(%3s) Bad packet received\n", "(MW)");
+            // back packet
+            return;
+        }
+        alarm(seconds);
+    }
+
+    printf("(%3s) Enqueuing job %d...\n", "M", job_id);
+    job_l = insert_jl(job_l, create_job(p->delay, p->prog_name));
+}
+
+void check_job_queue(to_proxy *topo){
+    // assuming all nodes have finished
+    // check if there's any program to be executed (TBE)
+    // if there is, then take it out from the list and broadcast to all nodes
+    // this should be run when a program has finished
+    int list_sz = get_jl_sz(job_l);
+
+    if (list_sz <= 0){
+        return;
+    }
+    job_node *el = pop_front(&job_l);
+    // forgot that they talked french
+    msg_packet p;
+    strncpy(p.prog_name, el->prog_name, MAX_PROG_NAME-1);
+    p.prog_name[MAX_PROG_NAME-1] = '\0';
+    p.delay = el->delay; // todo.warning: makes no sense if delay is really used
+    spawn_program(&p, topo);
+    free(el); // el turns into an unsued node, it must be free from memory
+    finished_c = 0;
+
+    printf("(%3s) There are %d jobs waiting to be executed.\n", "M", list_sz - 1);
 }
 
 void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
@@ -118,8 +181,8 @@ void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
             break;
         case AC_NP:
             printf("(%3s) Received to execute new program '%s' in %d seconds\n", "M", p->prog_name, p->delay);
-            *finished_c = 0;
-
+            add_program(p, topo, finished_c);
+            
         default: break;
     }
 }
@@ -141,23 +204,6 @@ void child_manager(to_proxy *topo){
     }
 }
 
-void spawn_program(msg_packet *p, to_proxy *topo){
-    // send message to all nodes to start a program
-    strcpy(p->prog_name, "hello");
-    p->ac = AC_SP; // packet will ask for nodes to spawn a program
-    int dest_node;
-    for (int node_idx=1; node_idx < NRO_PROC; node_idx++){
-        p->routing_idx = topology_search(topo, node_idx, p->routing_path, 16);
-        dest_node = route_walk(p);
-        if (dest_node <= 0){
-            printf("(%3s) Error on routing. Not a valid destination (%d)\n", "M", dest_node);
-            continue;
-        }
-        printf("(%3s) Sending packet to %d via %d\n", "M", node_idx, dest_node);
-        msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // block until sent
-    }
-}
-
 void parent_manager(to_proxy *topo, int *pid_vec){
     printf("(%3s) Parent process (PID: %d)\n", "M", pid_vec[0]);
 
@@ -176,22 +222,27 @@ void parent_manager(to_proxy *topo, int *pid_vec){
     msg_packet p;
     p.delay = 5;
 
-    int finished_c = -1;
-
     // order to execute command to each node
-    // spawn_program(&p, topo);
 
     printf("(%3s) Waiting for messages on %d\n", "M", channel_id);
     int rcv_ok;
     while(! do_exit){
+        // printf("(%3s) Value of finished_c is %d...\n", "M", finished_c);
         if (finished_c >= 0){
             // means we're waiting for processes to finish
             if (finished_c == NRO_PROC-1){
+                // if everyone finished, then we reset the counter
                 printf("(%3s) Waiting for new processes\n", "M");
+                finished_c = -2;
             }
+        } else
+        if (finished_c == -1){
+            // time to check the job queue for new processes
+            check_job_queue(topo);
         }
+        // printf("(%3s) Checking for new messages...\n", "M");
         rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0);
-        if (rcv_ok > 0){
+        if (rcv_ok > 0){ // did we read some bytes?
             process_packet_master(&p, topo, &finished_c);
         }
     }
@@ -231,6 +282,7 @@ void test_spawn_processes(to_types scheduler_topo){
         child_manager(tp);
     } else {
         pid_vec[0] = getpid();
+        signal(SIGALRM, alarm_handler_parent);
         signal(SIGINT, exit_handler_parent);
         parent_manager(tp, pid_vec);
         close_channel();
@@ -276,9 +328,6 @@ to_types process_args(int argc, char* argv[]){
 }
 
 int main(int argc, char* argv[]){
-    test_jl();
-    return 0;
-
     to_types cli_topology;
 
     cli_topology = process_args(argc, argv);
