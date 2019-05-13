@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <time.h>
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -31,6 +32,38 @@ int job_id = 0;
 int child_state = 0;
 
 
+// we need to finish that thing
+#include "jobs.c"
+job_node *job_l, *job_done_l = NULL;
+
+void print_summary(){
+    printf("(%3s) ~~ Summary ~~\n", "M");
+    job_node *el;
+    while(1){
+        el = pop_front_jl(&job_done_l);
+        if (!el){
+            break;
+        }
+        printf("%5sjob=%d, arquivo=%s, delay=%d, makespan=%.0f\n",
+            "", el->job_id, el->prog_name, el->delay,
+            (double)el->term_t - (double)el->sch_t
+        );
+        free(el);
+    }
+    printf("%5s ~~ Jobs não executados ~~\n", "");
+    while(1){
+        el = pop_front_jl(&job_l);
+        if (!el){
+            break;
+        }
+        printf("%5sjob=%d, arquivo=%s, delay=%d, makespan=<UNK>\n",
+            "", el->job_id, el->prog_name, el->delay
+        );
+        free(el);
+    }
+
+}
+
 void shutdown(){
     // shutdown steps
     // breaks topology but kills the current executing processes
@@ -43,12 +76,14 @@ void shutdown(){
         kill(pid_vec[id], SIGINT);
         waitpid(pid_vec[id], &status, 0);
     }
+    print_summary();
 }
 
 void exit_handler_parent(int sig_id){
     // will shutdown all programs and print the report
     shutdown();
     delete_channel(channel_id);
+    delete_jl(job_l);
     do_exit = 1;
 }
 
@@ -82,7 +117,7 @@ void exec_program(){
     int pid = fork();
     if (pid == 0){
         // child will sleep for a while
-        int sleep_time = 5;
+        int sleep_time = 3;
         printf("(I) Hello! I'm sleeping for %d seconds\n", sleep_time);
         sleep(sleep_time);
         exit(0);
@@ -119,9 +154,6 @@ void process_packet(msg_packet *p, to_proxy *topo){
     }
 }
 
-// we need to finish that thing
-#include "jobs.c"
-job_node *job_l;
 
 int finished_c = -2;
 
@@ -145,6 +177,35 @@ void spawn_program(msg_packet *p, to_proxy *topo){
     }
 }
 
+char check_spawn_delay(unsigned int sch_t){
+    // If you want to know what time_t really is, your journey will be a hell.
+    // At the end C stantard says it's an arithmetic type, but do not define
+    // its size, precision of whatever - so it up to the SO devs to make their mess.
+    // With some reasearch I know it's kind of 64-bit in size
+    // This program will break in 2038, but nobody cares.
+    unsigned int now, alarm_time;
+    double real_delay; // see the difftime for more information
+    char alarm_was_set = 0;
+
+    now = time(NULL);
+    real_delay = (double)now - (double)sch_t;
+
+    // then we'll figure out whether if we have or not to configure one
+    if (real_delay >= 0){
+        // we need to execute the program now
+        finished_c = -1;
+    } else {
+        // we're still on time, set an alarm
+        // we set the alarm just after the element is on the list
+        alarm_time = (unsigned int)(-real_delay);
+        signal(SIGALRM, alarm_handler_parent);
+        alarm(alarm_time);
+        alarm_was_set = 1;
+    }
+
+    return alarm_was_set;
+}
+
 void add_program(msg_packet *p, to_proxy *topo, int *finished_c){
     // very strict function, other values will have no effect under the scheduler
     // i.e. bad packets are discarded
@@ -156,42 +217,62 @@ void add_program(msg_packet *p, to_proxy *topo, int *finished_c){
         return;
     }
 
-    if (list_sz == 0){
-        // alarm is set when nobody is on the list
-        int seconds = p->delay;
-        if (seconds < 0){
-            printf("(%3s) Bad packet received\n", "(MW)");
-            // back packet
-            return;
-        }
-        alarm(seconds);
+    if (p->delay < 0){
+        printf("(%3s) Bad packet received. Reason: delay < 0\n", "M");
+        return;
     }
 
+    unsigned int sch_t;
+    sch_t = p->req_t + p->delay;
+
     printf("(%3s) Enqueuing job %d...\n", "M", job_id);
-    job_l = insert_jl(job_l, create_job(p->delay, p->prog_name));
+    printf("(%3s) Scheduled time is: %u\n", "M", sch_t);
+    job_node *el = create_job(sch_t, p->delay, p->prog_name);
+    el->job_id = job_id;
+    job_id += 1;
+    job_l = insert_jl(job_l, el);
+    
+    if (*finished_c == -2){
+        // means no one set an alarm, thus no program is executing
+        check_spawn_delay(sch_t);
+    }
+}
+
+void remove_program(){
+    if (job_done_l == NULL){
+        return;
+    }
+
+    job_node *el = job_done_l;
+
+    el->term_t = time(NULL);
 }
 
 void check_job_queue(to_proxy *topo){
-    // assuming all nodes have finished
-    // check if there's any program to be executed (TBE)
-    // if there is, then take it out from the list and broadcast to all nodes
-    // this should be run when a program has finished
-    int list_sz = get_jl_sz(job_l);
+    job_node *el = job_l;
+    if (el == NULL){
+        finished_c = -2;
+        return;
+    }
+    check_spawn_delay(el->sch_t);
+}
 
+void dispatch_program(to_proxy *topo){
+    int list_sz = get_jl_sz(job_l);
     if (list_sz <= 0){
         return;
     }
-    job_node *el = pop_front(&job_l);
-    // forgot that they talked french
+
+    job_node *el = pop_front_jl(&job_l);
+    list_sz += -1;
     msg_packet p;
     strncpy(p.prog_name, el->prog_name, MAX_PROG_NAME-1);
     p.prog_name[MAX_PROG_NAME-1] = '\0';
-    p.delay = el->delay; // todo.warning: makes no sense if delay is really used
     spawn_program(&p, topo);
-    free(el); // el turns into an unsued node, it must be free from memory
+    push_front_jl(&job_done_l, el);
     finished_c = 0;
 
-    printf("(%3s) There are %d jobs waiting to be executed.\n", "M", list_sz - 1);
+    printf("(%3s) There are %d jobs waiting to be executed.\n", "M", list_sz);
 }
 
 void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
@@ -287,12 +368,14 @@ void parent_manager(to_proxy *topo, int *pid_vec){
             if (finished_c == NRO_PROC-1){
                 // if everyone finished, then we reset the counter
                 printf("(%3s) Waiting for new processes\n", "M");
-                finished_c = -2;
+                remove_program();
+                // checks the list for the next job in the queue
+                check_job_queue(topo);
             }
-        } else
+        }
         if (finished_c == -1){
-            // time to check the job queue for new processes
-            check_job_queue(topo);
+            // spawns the program imediatelly
+            dispatch_program(topo);
         }
         // printf("(%3s) Checking for new messages...\n", "M");
         rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0);
@@ -336,7 +419,6 @@ void test_spawn_processes(to_types scheduler_topo){
         child_manager(tp);
     } else {
         pid_vec[0] = getpid();
-        signal(SIGALRM, alarm_handler_parent);
         signal(SIGINT, exit_handler_parent);
         parent_manager(tp, pid_vec);
         close_channel();

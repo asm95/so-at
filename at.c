@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <unistd.h> // for access syscall
 
@@ -21,6 +22,7 @@ void cli_main(int delay, char *prog_name){
     p.ac = AC_NP;
     p.type = 0x1; // send to master node 
     p.delay = delay;
+    p.req_t = time(NULL);
     strcpy(p.prog_name, prog_name);
     send_msg(oid, &p);
 }

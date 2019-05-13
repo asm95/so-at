@@ -18,6 +18,9 @@ typedef struct {
     // start a new program data
     char prog_name[MAX_PROG_NAME];
     unsigned int delay;
+    // todo.warning: 32-bit values are susceptible to the "Year 2038" problem
+    // info: we're trying to avoid including <time.h>
+    unsigned int req_t; // (req)uest_(t)ime is when at was executed
 
     // routing data
     int routing_idx;
