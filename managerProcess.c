@@ -31,7 +31,7 @@ void manager_process(int _id, pid_t *connections, char *option){
         // Checar o tipo de recepção realizado e tratar de acordo!
 
         if(p._mdst != _id){
-            if((p.type == 0x2 + _id)){
+            if(p.type == 0x2 + _id){
                 for(int i = 1; i < connections[0]+1; i++){
                     if(connections[i] < p._mdst && connections[i] != -1)
                         aux = connections[i];
@@ -49,7 +49,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                 
                 enviado = msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);
                 free(q);
-            } else if((p.type == 19+_id) && (p.finished == 0)){
+            } else if(p.type == 19+_id){
                 aux = 99;
                 for(int i = 1; i < connections[0]+1; i++){
                     if(connections[i] < aux)
@@ -67,7 +67,6 @@ void manager_process(int _id, pid_t *connections, char *option){
                 q->ready = p.ready;
 
                 enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
-
                 free(q);
             }
         } else {
@@ -88,7 +87,6 @@ void manager_process(int _id, pid_t *connections, char *option){
             q->ready = 1;
 
             enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
-
             free(q);
         }
     }

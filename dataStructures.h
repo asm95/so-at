@@ -33,6 +33,12 @@ typedef struct hyperTorus{
     struct hyperTorus *next;                        // Next process
 } hyperTorus;
 
+typedef struct ready{
+    pid_t _id;
+    
+    struct ready *next;
+} ready;
+
 void    createQueue(_queue **queue);
 void    insertProcess(_queue **queue, char *_name, int _delay);
 _queue* removeProcess(_queue **queue);
@@ -50,3 +56,7 @@ void readHyperTorus(hyperTorus *ht);
 pid_t* get_htConnection(hyperTorus *_hyper);
 
 void readConnections(pid_t *connections);
+
+void createReady(ready **_ready);
+void insertReady(ready **_ready, int _id);
+ready* removeReady(ready **_ready);

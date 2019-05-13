@@ -61,8 +61,7 @@ void delayed_scheduler(void *connections, int _managers){
     long type;
     msg_packet p, *q;
     _queue *queue;
-    hyperTorus *ht;
-    fTree *ft;
+    ready *_ready, *r1;
 
     signal(SIGINT, shutdown);                                           // Defines a signal treatment
 
@@ -81,6 +80,10 @@ void delayed_scheduler(void *connections, int _managers){
     if(qid >= 0){                                                       // If message queue is open
         printf("Channel was created! Channel ID: %d\n", qid);
         createQueue(&queue);                                            // Creates a process queue for delayed execution
+        createReady(&_ready);
+
+        for(int i = 0; i < _managers; i++)
+            insertReady(&_ready, i);
 
         while(1){
             msgrcv(qid, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0); // Receives the programs to be executed
@@ -90,17 +93,19 @@ void delayed_scheduler(void *connections, int _managers){
             printf("-----------------------------\n");
             listProcesses(queue);                                       // Prints the process queue
             
-            for(int i = 0; i < _managers; i++){
+            while(_ready != NULL){
+                r1 = removeReady(&_ready);
+
                 q = malloc(sizeof(msg_packet));
                 q->type  = 0x2;
                 strcpy(q->name, p.name);
                 q->delay = p.delay;
-                q->_mdst = i;
+                q->_mdst = r1->_id;
                 q->ready = 0;
                 q->finished = 0;
 
                 enviado = msgsnd(qid, q, sizeof(msg_packet), 0);
-
+                free(r1);
                 free(q);
             }
 
@@ -112,6 +117,8 @@ void delayed_scheduler(void *connections, int _managers){
                     count++;
                 }
             }
+
+
             // Receber aviso de "ready" (montar fila de escalonamento FIFO)
 
             // Enviar ordem de execução!

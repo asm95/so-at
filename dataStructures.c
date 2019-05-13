@@ -258,3 +258,33 @@ void readConnections(pid_t *connections){                               // Reads
         printf("%d ", connections[i]);
     printf("\n");
 }
+
+void createReady(ready **_ready){
+    *_ready = NULL;
+}
+
+void insertReady(ready **_ready, int _id){
+    ready *r1, *r2;
+
+    r1 = malloc(sizeof(ready));
+    r1->_id  = _id;
+    r1->next = NULL;
+
+    if(*_ready == NULL)
+        *_ready = r1;
+    else{
+        r2 = *_ready;
+        while(r2->next != NULL)
+            r2 = r2->next;
+        r2->next = r1;
+    }
+}
+
+ready* removeReady(ready **_ready){
+    ready *r1;
+
+    r1 = *_ready;
+    *_ready = r1->next;
+
+    return r1;
+}
