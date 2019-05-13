@@ -55,9 +55,9 @@ void shutdown(){
     exit(0);
 }
 
-void delayed_scheduler(void *connections){
+void delayed_scheduler(void *connections, int _managers){
     // Under Construction
-    int qid, enviado, recebido;
+    int qid, enviado, recebido, count;
     long type;
     msg_packet p, *q;
     _queue *queue;
@@ -66,14 +66,14 @@ void delayed_scheduler(void *connections){
 
     signal(SIGINT, shutdown);                                           // Defines a signal treatment
 
-    if(strcmp(option, HYPER) == 0 || strcmp(option, TORUS) == 0){       // Gets the Hypercube or Torus structure
-        ht = (hyperTorus*)connections;
-        // readHyperTorus(ht);                                             // Debug only!
-    }
-    else{                                                               // Gets the Fat Tree structure
-        ft = (fTree*)connections;
-        // readTree(ft);                                                   // Debug only!
-    }
+    // if(strcmp(option, HYPER) == 0 || strcmp(option, TORUS) == 0){       // Gets the Hypercube or Torus structure
+    //     ht = (hyperTorus*)connections;
+    //     // readHyperTorus(ht);                                             // Debug only!
+    // }
+    // else{                                                               // Gets the Fat Tree structure
+    //     ft = (fTree*)connections;
+    //     // readTree(ft);                                                   // Debug only!
+    // }
 
     printf("Attempting to create a msg queue...\n");
     qid = create_channel();                                             // Tries to open a message queue
@@ -90,21 +90,35 @@ void delayed_scheduler(void *connections){
             printf("-----------------------------\n");
             listProcesses(queue);                                       // Prints the process queue
             
-            if(strcmp(option, FAT) == 0){
-                for(int i = 0; i < FATCHILDS; i++){
-                    q = malloc(sizeof(msg_packet));
-                    q->type  = 0x2;
-                    strcpy(q->name, p.name);
-                    q->delay = p.delay;
-                    q->_mdst = i;
+            for(int i = 0; i < _managers; i++){
+                q = malloc(sizeof(msg_packet));
+                q->type  = 0x2;
+                strcpy(q->name, p.name);
+                q->delay = p.delay;
+                q->_mdst = i;
+                q->ready = 0;
+                q->finished = 0;
 
-                    enviado = msgsnd(qid, q, sizeof(msg_packet), 0);
+                enviado = msgsnd(qid, q, sizeof(msg_packet), 0);
 
-                    free(q);
-                }
-            } else {
-                //
+                free(q);
             }
+
+            count = 0;
+            while(count < _managers){
+                recebido = msgrcv(qid, &p, sizeof(msg_packet)-sizeof(long), 18, IPC_NOWAIT);
+                if(recebido != -1){
+                    printf("Processo #%d is ready to execute!\n", p._id);
+                    count++;
+                }
+            }
+            // Receber aviso de "ready" (montar fila de escalonamento FIFO)
+
+            // Enviar ordem de execução!
+
+            // Receber aviso de conclusão!
+
+            // Repetir!
         }
     }
     else
@@ -178,12 +192,12 @@ int main(int argc, char* argv[]){
         }
 
         sleep(1);
-        manager_process((getpid() - getppid() - 1), connections);       // Manager routine
+        manager_process((getpid()-getppid()-1), connections, option);   // Manager routine
     } else{
         if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0))
-            delayed_scheduler((void*)ht);                               // Calls the Delayed Scheduler Routine
+            delayed_scheduler((void*)ht, _struct);                      // Calls the Delayed Scheduler Routine
         else
-            delayed_scheduler((void*)ft);                               // Calls the Delayed Scheduler Routine
+            delayed_scheduler((void*)ft, _struct);                      // Calls the Delayed Scheduler Routine
     }
 
     exit(0);

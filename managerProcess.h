@@ -13,4 +13,4 @@
 #endif
 
 void manager_exit();
-void manager_process(int _id, pid_t *connections);
+void manager_process(int _id, pid_t *connections, char *option);

@@ -13,7 +13,12 @@ typedef struct msg_packet {
     char name[256];             // Program name for the scheduler
     int  delay;                 // Delay (in seconds) for execution
 
-    int _mdst;                   // ID of manager destination
+    int _mdst;                  // ID of manager destination
+    
+    // adicionar campos!
+    int _id;                    // Process ID
+    int ready;                  // Flag to indicate manager ready to execute
+    int finished;               // Flag to indicate manager finished execution
 } msg_packet;
 
 int create_channel();

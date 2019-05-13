@@ -14,5 +14,5 @@
 #include "dataStructures.h"
 #include "managerProcess.h"
 
-void delayed_scheduler(void *connections); // Ongoing
+void delayed_scheduler(void *connections, int _managers); // Ongoing
 void shutdown();
