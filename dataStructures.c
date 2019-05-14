@@ -1,13 +1,13 @@
 #include "dataStructures.h"
 
-void createQueue(_queue **queue){
+void createQueue(execq **queue){
     *queue = NULL;
 }
 
-void insertProcess(_queue **queue, char *_name, int _delay){
-    _queue *q1, *q2;
+void insertProcess(execq **queue, char *_name, int _delay){
+    execq *q1, *q2;
 
-    q1 = malloc(sizeof(_queue));
+    q1 = malloc(sizeof(execq));
     q1->name = malloc(sizeof(char)*strlen(_name));
     strcpy(q1->name, _name);
     q1->delay = _delay;
@@ -24,8 +24,8 @@ void insertProcess(_queue **queue, char *_name, int _delay){
     }
 }
 
-_queue* removeProcess(_queue **queue){
-    _queue *q1;
+execq* removeProcess(execq **queue){
+    execq *q1;
 
     if(*queue == NULL)
         return NULL;
@@ -38,9 +38,9 @@ _queue* removeProcess(_queue **queue){
     return q1;
 }
 
-void listProcesses(_queue *queue){
+void listProcesses(execq *queue){
     int job = 0;
-    _queue *q1;
+    execq *q1;
 
     if(queue == NULL)
         printf("No processes on execution queue...\n");
@@ -259,32 +259,32 @@ void readConnections(pid_t *connections){                               // Reads
     printf("\n");
 }
 
-void createReady(ready **_ready){
-    *_ready = NULL;
+void createManQ(manq **_manq){
+    *_manq = NULL;
 }
 
-void insertReady(ready **_ready, int _id){
-    ready *r1, *r2;
+void insertManQ(manq **_manq, int _id){
+    manq *r1, *r2;
 
-    r1 = malloc(sizeof(ready));
+    r1 = malloc(sizeof(manq));
     r1->_id  = _id;
     r1->next = NULL;
 
-    if(*_ready == NULL)
-        *_ready = r1;
+    if(*_manq == NULL)
+        *_manq = r1;
     else{
-        r2 = *_ready;
+        r2 = *_manq;
         while(r2->next != NULL)
             r2 = r2->next;
         r2->next = r1;
     }
 }
 
-ready* removeReady(ready **_ready){
-    ready *r1;
+manq* removeManQ(manq **_manq){
+    manq *r1;
 
-    r1 = *_ready;
-    *_ready = r1->next;
+    r1 = *_manq;
+    *_manq = r1->next;
 
     return r1;
 }

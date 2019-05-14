@@ -8,7 +8,7 @@ void manager_process(int _id, pid_t *connections, char *option){
     // TODO
     char *program;
     int  delay;
-    int msqid, recebido, enviado, aux, _ndst;
+    int msqid, recebido, enviado, aux, _ndst, _fork, _status;
     msg_packet p, *q;
 
     signal(SIGQUIT, manager_exit);
@@ -46,6 +46,9 @@ void manager_process(int _id, pid_t *connections, char *option){
                 strcpy(q->name, p.name);
                 q->delay = p.delay;
                 q->_mdst = p._mdst;
+                q->ready = p.ready;
+                q->exec  = p.exec;
+                q->finished = p.finished;
                 
                 enviado = msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);
                 free(q);
@@ -65,29 +68,71 @@ void manager_process(int _id, pid_t *connections, char *option){
                 q->_mdst = p._mdst;
                 q->_id = p._id;
                 q->ready = p.ready;
+                q->exec  = p.exec;
+                q->finished = p.finished;
 
                 enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
                 free(q);
             }
         } else {
-            program = p.name;
-            delay = p.delay;
+            if(p.ready == 0){
+                program = p.name;
+                delay = p.delay;
 
-            q = malloc(sizeof(msg_packet));
-            
-            aux = 99;
-            for(int i = 1; i < connections[0]+1; i++){
-                if(connections[i] < aux)
-                    aux = connections[i];
+                q = malloc(sizeof(msg_packet));
+                
+                aux = 99;
+                for(int i = 1; i < connections[0]+1; i++){
+                    if(connections[i] < aux)
+                        aux = connections[i];
+                }
+
+                q->type  = 19+aux;
+                q->_mdst = -1;
+                q->_id   = _id;
+                q->ready = 1;
+                q->exec  = p.exec;
+                q->finished = p.finished;
+
+                enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
+                free(q);
             }
+            if(p.exec == 1){
+                printf("%d: Order of execution received!\n", _id);
+                _fork = fork();
+                
+                if(_fork == 0){
+                    signal(SIGALRM, start_exec);
+                    alarm(delay);
+                    pause();
+                    if(execl(program, program, NULL) == -1);
+                        exit(1);
+                } else {
+                    wait(&_status);
+                    if(_status == 1){
+                        printf("Error on executing the program %s...\n", program);
+                    }
+                    q = malloc(sizeof(msg_packet));
+                
+                    aux = 99;
+                    for(int i = 1; i < connections[0]+1; i++){
+                        if(connections[i] < aux)
+                            aux = connections[i];
+                    }
 
-            q->type  = 19+aux;
-            q->_mdst = -1;
-            q->_id   = _id;
-            q->ready = 1;
+                    q->type  = 19+aux;
+                    q->_mdst = -1;
+                    q->_id   = _id;
+                    q->ready = 1;
+                    q->exec  = 1;
+                    q->finished = 1;
 
-            enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
-            free(q);
+                    enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
+                    free(q);
+                }
+            }
         }
     }
 }
+
+void start_exec(){}

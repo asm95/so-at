@@ -6,6 +6,7 @@
 #ifndef _SYS_LIBS_H
     #include <sys/signal.h>
     #include <sys/types.h>
+    #include <sys/wait.h>
 #endif
 
 #ifndef _MSG_QUEUE_H
@@ -14,3 +15,4 @@
 
 void manager_exit();
 void manager_process(int _id, pid_t *connections, char *option);
+void start_exec();

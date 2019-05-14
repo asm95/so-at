@@ -60,8 +60,9 @@ void delayed_scheduler(void *connections, int _managers){
     int qid, enviado, recebido, count;
     long type;
     msg_packet p, *q;
-    _queue *queue;
-    ready *_ready, *r1;
+    execq *eq;
+    manq *_freep, *f1; 
+    manq *_ready, *r1;
 
     signal(SIGINT, shutdown);                                           // Defines a signal treatment
 
@@ -79,33 +80,36 @@ void delayed_scheduler(void *connections, int _managers){
 
     if(qid >= 0){                                                       // If message queue is open
         printf("Channel was created! Channel ID: %d\n", qid);
-        createQueue(&queue);                                            // Creates a process queue for delayed execution
-        createReady(&_ready);
+        createQueue(&eq);    
+        createManQ(&_freep);                                        // Creates a process queue for delayed execution
+        createManQ(&_ready);
 
         for(int i = 0; i < _managers; i++)
-            insertReady(&_ready, i);
+            insertManQ(&_freep, i);
 
         while(1){
             msgrcv(qid, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0); // Receives the programs to be executed
-            insertProcess(&queue, p.name, p.delay);                     // Inserts the program to be executed on the queue
+            insertProcess(&eq, p.name, p.delay);                     // Inserts the program to be executed on the queue
 
             printf("Job #\tProgram\t\tDelay\n");
             printf("-----------------------------\n");
-            listProcesses(queue);                                       // Prints the process queue
+            listProcesses(eq);                                       // Prints the process queue
             
-            while(_ready != NULL){
-                r1 = removeReady(&_ready);
+            while(_freep != NULL){
+                f1 = removeManQ(&_freep);
 
                 q = malloc(sizeof(msg_packet));
                 q->type  = 0x2;
                 strcpy(q->name, p.name);
                 q->delay = p.delay;
-                q->_mdst = r1->_id;
+                q->_mdst = f1->_id;
+                q->_id = 0;
                 q->ready = 0;
+                q->exec  = 0;
                 q->finished = 0;
 
                 enviado = msgsnd(qid, q, sizeof(msg_packet), 0);
-                free(r1);
+                free(f1);
                 free(q);
             }
 
@@ -113,12 +117,43 @@ void delayed_scheduler(void *connections, int _managers){
             while(count < _managers){
                 recebido = msgrcv(qid, &p, sizeof(msg_packet)-sizeof(long), 18, IPC_NOWAIT);
                 if(recebido != -1){
-                    printf("Processo #%d is ready to execute!\n", p._id);
+                    insertManQ(&_ready, p._id);
+                    printf("Process #%d is ready to execute!\n", p._id);
                     count++;
                 }
             }
 
+            while(_ready != NULL){
+                r1 = removeManQ(&_ready);
 
+                q = malloc(sizeof(msg_packet));
+                q->type  = 0x2;
+                // strcpy(q->name, NULL);
+                q->delay = 0;
+                q->_mdst = r1->_id;
+                q->_id = 0;
+                q->ready = 1;
+                q->exec  = 1;
+                q->finished = 0;
+
+                printf("Sending execution order to %d\n", q->_mdst);
+                enviado = msgsnd(qid, q, sizeof(msg_packet)-sizeof(long), 0);
+                free(r1);
+                free(q);
+            }
+
+            count = 0;
+            while(1){
+                recebido = msgrcv(qid, &p, sizeof(msg_packet)-sizeof(long), 18, IPC_NOWAIT);
+                if(recebido != -1){
+                    insertManQ(&_freep, p._id);
+                    count++;
+                }
+                if(count == _managers){
+                    removeProcess(&eq);
+                    break;
+                }
+            }
             // Receber aviso de "ready" (montar fila de escalonamento FIFO)
 
             // Enviar ordem de execução!

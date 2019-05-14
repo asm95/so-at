@@ -18,6 +18,7 @@ typedef struct msg_packet {
     // adicionar campos!
     int _id;                    // Process ID
     int ready;                  // Flag to indicate manager ready to execute
+    int exec;                   // Flag to indicate manager to execute program
     int finished;               // Flag to indicate manager finished execution
 } msg_packet;
 

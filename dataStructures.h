@@ -7,12 +7,12 @@
 #define CHILDS 16
 #define FATCHILDS 15
 
-typedef struct _queue {
+typedef struct execq {
     char *name;
     int  delay;
 
-    struct _queue *prox;
-} _queue;
+    struct execq *prox;
+} execq;
 
 typedef struct fTree {
     pid_t id;                                       // ID of the process
@@ -33,16 +33,16 @@ typedef struct hyperTorus{
     struct hyperTorus *next;                        // Next process
 } hyperTorus;
 
-typedef struct ready{
+typedef struct manq{
     pid_t _id;
     
-    struct ready *next;
-} ready;
+    struct manq *next;
+} manq;
 
-void    createQueue(_queue **queue);
-void    insertProcess(_queue **queue, char *_name, int _delay);
-_queue* removeProcess(_queue **queue);
-void    listProcesses(_queue *queue);
+void    createQueue(execq **queue);
+void    insertProcess(execq **queue, char *_name, int _delay);
+execq* removeProcess(execq **queue);
+void    listProcesses(execq *queue);
 
 void createFTree(fTree **_tree);
 void definesTree(fTree **_tree, int _parent, int *_node, int _level);
@@ -57,6 +57,6 @@ pid_t* get_htConnection(hyperTorus *_hyper);
 
 void readConnections(pid_t *connections);
 
-void createReady(ready **_ready);
-void insertReady(ready **_ready, int _id);
-ready* removeReady(ready **_ready);
+void createManQ(manq **_manq);
+void insertManQ(manq **_manq, int _id);
+manq* removeManQ(manq **_manq);
