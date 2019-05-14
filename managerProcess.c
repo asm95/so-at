@@ -8,12 +8,12 @@ void manager_process(int _id, pid_t *connections, char *option){
     // TODO
     char *program;
     int  delay;
-    int msqid, recebido, enviado, aux, _ndst, _fork, _status;
+    int msqid, recebido, enviado, aux, _ndst, _fork, _status, _wait;
     msg_packet p, *q;
 
     signal(SIGQUIT, manager_exit);
 
-    msqid  = get_channel();
+    msqid  = get_channel(MQ_SM);
     recebido = -1;
 
     while(1){
@@ -105,13 +105,13 @@ void manager_process(int _id, pid_t *connections, char *option){
                     signal(SIGALRM, start_exec);
                     alarm(delay);
                     pause();
-                    if(execl(program, program, NULL) == -1);
+                    if(execl(program, program, NULL) == -1)
                         exit(1);
                 } else {
-                    wait(&_status);
-                    if(_status == 1){
+                    _wait = wait(&_status);
+                    if(WEXITSTATUS(_status) == 1)
                         printf("Error on executing the program %s...\n", program);
-                    }
+
                     q = malloc(sizeof(msg_packet));
                 
                     aux = 99;

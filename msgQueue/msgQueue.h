@@ -5,7 +5,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define MQ_ID 0x8349            // Channel for communication
+#define MQ_SD 0x7497            // Channel for communication Scheduler-Delayed
+#define MQ_SM 0x8349            // Channel for communication Scheduler-Managers
 
 typedef struct msg_packet {
     long type;                  // Defines the message type
@@ -22,8 +23,13 @@ typedef struct msg_packet {
     int finished;               // Flag to indicate manager finished execution
 } msg_packet;
 
-int create_channel();
-int get_channel();
+typedef struct pid_packet{
+    long type;
+    pid_t pid;
+} pid_packet;
+
+int create_channel(int key);
+int get_channel(int key);
 int delete_channel(int msg_id);
 
 int send_packet();

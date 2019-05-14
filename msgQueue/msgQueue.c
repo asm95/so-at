@@ -1,9 +1,9 @@
 #include "msgQueue.h"
 
-int create_channel(){
-    int msg_id = msgget(MQ_ID, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+int create_channel(int key){
+    int msg_id = msgget(key, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
-    printf("%d\n", msg_id);
+    // printf("%d\n", msg_id);
 
     if(msg_id == -1){                   // Fails to create the channel
         if(errno == EACCES){
@@ -27,8 +27,8 @@ int create_channel(){
     return msg_id;              // Returns the channel ID
 }
 
-int get_channel(){
-    int msg_id = msgget(MQ_ID, S_IWUSR | S_IRUSR);
+int get_channel(int key){
+    int msg_id = msgget(key, S_IWUSR | S_IRUSR);
 
     return msg_id;
 }

@@ -16,3 +16,5 @@
 
 void delayed_scheduler(void *connections, int _managers); // Ongoing
 void shutdown();
+void new_schedule();
+void send_pid();

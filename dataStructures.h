@@ -59,4 +59,6 @@ void readConnections(pid_t *connections);
 
 void createManQ(manq **_manq);
 void insertManQ(manq **_manq, int _id);
+void insertManQSorted(manq **_manq, int _id);
 manq* removeManQ(manq **_manq);
+void readManQ(manq *_manq);

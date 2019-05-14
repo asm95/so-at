@@ -47,7 +47,7 @@ void listProcesses(execq *queue){
     else{
         q1 = queue;
         while(q1 != NULL){
-            printf("%d\t%s\t%d\n", job, q1->name, q1->delay);
+            printf("%d\t%s\t\t%d\n", job, q1->name, q1->delay);
             job++;
             q1 = q1->prox;
         }
@@ -280,6 +280,25 @@ void insertManQ(manq **_manq, int _id){
     }
 }
 
+void insertManQSorted(manq **_manq, int _id){
+    manq *r1, *r2;
+
+    r1 = malloc(sizeof(manq));
+    r1->_id = _id;
+    r1->next = NULL;
+
+    if(*_manq == NULL || (*_manq)->_id < r1->_id){
+        r1->next = *_manq;
+        *_manq = r1;
+    } else{
+        r2 = *_manq;
+        while(r2->next != NULL && r1->_id < r2->next->_id)
+            r2 = r2->next;
+        r1->next = r2->next;
+        r2->next = r1;
+    }
+}
+
 manq* removeManQ(manq **_manq){
     manq *r1;
 
@@ -287,4 +306,14 @@ manq* removeManQ(manq **_manq){
     *_manq = r1->next;
 
     return r1;
+}
+
+void readManQ(manq *_manq){
+    manq *m1;
+
+    m1 = _manq;
+    while(m1 != NULL){
+        printf("Process: %d\n", m1->_id);
+        m1 = m1->next;
+    }
 }
