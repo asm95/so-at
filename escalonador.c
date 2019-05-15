@@ -88,10 +88,9 @@ void send_pid(){
 
 void delayed_scheduler(void *connections, int _managers){
     // Under Construction
-    int msgsmid, msgsdid, enviado, recebido, count;
+    int msgsmid, enviado, recebido, count;
     long type;
     msg_packet p, *q;
-    pid_packet *ppkg;
     manq *_freep, *f1; 
     manq *_ready, *r1;
 
@@ -99,27 +98,13 @@ void delayed_scheduler(void *connections, int _managers){
     signal(SIGUSR1, send_pid);                                          // Defines a SIGUSR1 treatment
     signal(SIGUSR2, new_schedule);                                      // Defines a SIGUSR2 treatment
 
-    // printf("Attempting to create message queues...\n");
-
-    msgsdid = create_channel(MQ_SD);                                    // Tries to open a Scheduler-Delayed queue
-    if(msgsdid != -1){
-        // printf("Schduler-Delayed channel was created! Channel ID: %d\n", msgsdid);
-        ppkg = malloc(sizeof(pid_packet));
-        ppkg->type = 0x1;
-        ppkg->pid  = getpid();
-
-        enviado = msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
-    }
-
-    msgsmid = create_channel(MQ_SM);                                    // Tries to open a Scheduler-Manager queue
-    // if(msgsmid != -1)
-        // printf("Schduler-Manager channel was created! Channel ID: %d\n", msgsmid);
-
     createQueue(&eq);                                                   // Creates the queue of the programs to be executed
     createManQ(&_freep);                                                // Creates the queue for processes free to execute
     createManQ(&_ready);                                                // Creates the queue for processes ready for execution
 
+    msgsmid = create_channel(MQ_SM);                                    // Tries to open a Scheduler-Manager queue
     if(msgsmid >= 0){                                                   // If message queue is open
+        printf("Schduler-Manager channel was created! Channel ID: %d\n", msgsmid);
         for(int i = 0; i < _managers; i++)
             insertManQ(&_freep, i);
 
@@ -187,18 +172,39 @@ void delayed_scheduler(void *connections, int _managers){
                 pause();
         }
     }
-    else
+    else{
         printf("Error on creating a new channel...\n");
+        shutdown();
+    }
 }
 
 int main(int argc, char* argv[]){
     pid_t *connections, _parent;
     int   _struct, _fork, _id, _status, aux = 0;
+    int msgsdid, msgsmid, enviado;
     fTree *ft;
     hyperTorus *ht;
+    pid_packet *ppkg;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
     _parent = getpid();                                                 // Receives the Scheduler PID
+
+    printf("Attempting to create message queue...\n");
+
+    msgsdid = create_channel(MQ_SD);                                    // Tries to open a Scheduler-Delayed queue
+    if(msgsdid >= 0){
+        printf("Schduler-Delayed channel was created! Channel ID: %d\n", msgsdid);
+        ppkg = malloc(sizeof(pid_packet));
+        ppkg->type = 0x1;
+        ppkg->pid  = getpid();
+
+        enviado = msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
+    }
+
+    if(msgsdid < 0 || msgsmid < 0){
+        printf("Error while creating the queues. Terminating execution...\n");
+        exit(0);
+    }
 
     /*
      * Checks if the scheduler was called with a argument.
