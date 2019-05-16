@@ -15,7 +15,7 @@
 #include "dataStructures.h"
 #include "managerProcess.h"
 
-void delayed_scheduler(int _managers); // Ongoing
+void delayed_scheduler(int _managers);
 void shutdown();
 void new_schedule();
 void send_pid();

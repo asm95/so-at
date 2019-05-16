@@ -88,8 +88,6 @@ void send_pid(){
     enviado = msgsnd(msgsdid, &ppkg, sizeof(pid_packet)-sizeof(long), 0);
 }
 
-void unpause(){}
-
 void delayed_scheduler(int _managers){
     // Under Construction
     int msgsmid, enviado, recebido, count;

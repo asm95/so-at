@@ -24,13 +24,10 @@ typedef struct msg_packet {
 } msg_packet;
 
 typedef struct pid_packet{
-    long type;
-    pid_t pid;
+    long type;                  // Type of the message
+    pid_t pid;                  // Content: PID of Scheduler
 } pid_packet;
 
 int create_channel(int key);
 int get_channel(int key);
 int delete_channel(int msg_id);
-
-int send_packet();
-// int recv_packet();
