@@ -137,7 +137,7 @@ void route_print(msg_packet *p){
     printf("\n");
 }
 
-void exec_program(){
+void exec_program_mock(){
     int pid = fork();
     if (pid == 0){
         // child will sleep for a while
@@ -149,6 +149,30 @@ void exec_program(){
         // node will now listen to the queue and wait for it's child termination
         child_state = 1;
     }
+}
+
+void exec_program_from_file(msg_packet *p){
+    int pid = fork();
+    if (pid == 0){
+        // child will replace it's in memory image
+        char prog_name_buffer[MAX_PROG_NAME + 2];
+        // append './' to the name of the program is important
+        // because the shell like behaviour of the execlp will search
+        // in the current directory
+        if (strncmp(p->prog_name, "./", 2) != 0 && p->prog_name[0] != '/'){
+            sprintf(prog_name_buffer, "./%s", p->prog_name);
+        }
+        execlp(prog_name_buffer, p->prog_name, (char *)NULL);
+        printf("(C%2d) Could not execute '%s'\n", pid_id, p->prog_name);
+        exit(0); // case in error
+    }
+}
+
+void exec_program(msg_packet *p){
+    // exec_program_mock()
+    exec_program_from_file(p);
+    // node will now listen to the queue and wait for it's child termination
+    child_state = 1;
 }
 
 void send_prog_finished(msg_packet *p, to_proxy *topo){
@@ -173,7 +197,7 @@ void process_packet(msg_packet *p, to_proxy *topo){
         printf("(C%2d) Packet is for me!\n", pid_id);
         if (p->ac == AC_SP){
             printf("(C%2d) Message for spawn program named '%s'\n", pid_id, p->prog_name);
-            exec_program();
+            exec_program(p);
         }
     }
 }

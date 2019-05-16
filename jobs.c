@@ -113,7 +113,7 @@ int get_jl_sz(job_node *head){
 
 void print_jl(job_node *head){
     while (head){
-        printf("(%d,%s) -> ", head->sch_t, head->prog_name);
+        printf("(%ld,%s) -> ", head->sch_t, head->prog_name);
         head = head->next;
     }printf("\n");
 }
