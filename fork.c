@@ -30,14 +30,30 @@ int pid_vec[NRO_PROC];
 int pid_id, real_pid, channel_id, do_exit = 0;
 int job_id = 0;
 int child_state = 0;
+int exec_ord = 0;
 
 
 // we need to finish that thing
 #include "jobs.c"
 job_node *job_l, *job_done_l = NULL;
 
+char * as_pretty_time(char *buf, long time_now){
+    struct tm * time_info;
+    time_info = localtime(&time_now);
+    if (time_info == NULL){
+        sprintf(buf, "%s", "<UNK>");
+        return buf;
+    }
+    sprintf(buf, "%02d:%02d",
+        time_info->tm_min,
+        time_info->tm_sec
+    );
+    return buf;
+}
+
 void print_summary(){
-    printf("(%3s) ~~ Summary ~~\n", "M");
+    printf("(%3s) ~~ Resumo ~~\n", "M");
+    char time_buf[4][11];
     job_node *el;
     while(1){
         el = pop_front_jl(&job_done_l);
@@ -47,6 +63,14 @@ void print_summary(){
         printf("%5sjob=%d, arquivo=%s, delay=%d, makespan=%.0f\n",
             "", el->job_id, el->prog_name, el->delay,
             (double)el->term_t - (double)el->sch_t
+        );
+        printf(
+            "%5s\tsch_t=%s,exc_t=%s,term_t=%s\n"
+            "%5s\texc_ord=%d\n",
+            "", as_pretty_time((char*)&time_buf[0], el->sch_t),
+                as_pretty_time((char*)&time_buf[1], el->exc_t),
+                as_pretty_time((char*)&time_buf[2], el->term_t),
+            "", el->exc_ord
         );
         free(el);
     }
@@ -269,6 +293,9 @@ void dispatch_program(to_proxy *topo){
     strncpy(p.prog_name, el->prog_name, MAX_PROG_NAME-1);
     p.prog_name[MAX_PROG_NAME-1] = '\0';
     spawn_program(&p, topo);
+    el->exc_t = time(NULL);
+    el->exc_ord = exec_ord;
+    exec_ord += 1;
     push_front_jl(&job_done_l, el);
     finished_c = 0;
 

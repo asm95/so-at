@@ -4,8 +4,8 @@
 #define MAX_PROG_NAME_JOBS 25
 
 typedef struct job_list_t {
-    unsigned int sch_t, term_t;
-    int job_id, delay;
+    long sch_t, exc_t, term_t;
+    int job_id, delay, exc_ord;
     char prog_name[MAX_PROG_NAME_JOBS];
     struct job_list_t *next;
 } job_node;
