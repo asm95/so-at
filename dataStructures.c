@@ -110,20 +110,21 @@ void readTree(fTree *_tree){                                            // Reads
     }
 }
 
-pid_t* get_fTreeConnection(fTree *_tree){                               // Gets all the processes connections on the Fat Tree structure
+pid_t* get_fTreeConnection(fTree *_tree, int _id){                      // Gets all the processes connections on the Fat Tree structure
     pid_t *connections = NULL;
+    int i;
 
     if(_tree != NULL){                                                  // If the node is not NULL
-        if(_tree->id == getpid() - getppid() - 1){                      // Checks the PID against the ID
+        if(_tree->id == _id){                                           // Checks the PID against the ID
             connections = malloc(sizeof(pid_t)*(_tree->lenght)+1);      // Gets the number of connections
             connections[0] = _tree->lenght;                             // Saves the total connections of the node
             for(int i = 1, j = 0; i < _tree->lenght+1; i++, j++)
                 connections[i] = _tree->connects[j];                    // Saves the nodes connections
         } else {                                                        // If PID != ID
-            connections = get_fTreeConnection(_tree->left);             // Checks the left node
+            connections = get_fTreeConnection(_tree->left, _id);        // Checks the left node
             if(connections != NULL)                                     // If the left node has PID == ID
                 goto RETURN;                                            // Returns
-            connections = get_fTreeConnection(_tree->right);            // Checks the right node
+            connections = get_fTreeConnection(_tree->right, _id);       // Checks the right node
         }
     }
 
@@ -231,13 +232,13 @@ void readHyperTorus(hyperTorus *_ht){                                   // Reads
     }
 }
 
-pid_t* get_htConnection(hyperTorus *_ht){                               // Gets all the processes connections on the Hypercube or Torus structure
+pid_t* get_htConnection(hyperTorus *_ht, int _id){                      // Gets all the processes connections on the Hypercube or Torus structure
     hyperTorus *ht1;
     pid_t *connections;
 
     ht1 = _ht;
     while(ht1 != NULL){
-        if(ht1->id == getpid() - getppid() - 1){                        // Checks the PID against the ID of each node
+        if(ht1->id == _id){                                             // Checks the PID against the ID of each node
             connections = malloc(sizeof(pid_t)*(ht1->length)+1);        // Gets the number of connections + 1
             connections[0] = ht1->length;                               // The first value is the number of connections
             for(int i = 1, j = 0; i < ht1->length+1; i++, j++)
@@ -252,8 +253,15 @@ pid_t* get_htConnection(hyperTorus *_ht){                               // Gets 
     return connections;                                                 // Return the node's connections
 }
 
-void readConnections(pid_t *connections){                               // Reads all the nodes connections. Debug only!
-    printf("Connections of %d: ", getpid() - getppid() - 1);
+void readHTConnections(pid_t *connections, int _id){                    // Reads all the nodes connections. Debug only!
+    printf("Connections of %d: ", _id);
+    for(int i = 1; i < connections[0]+1; i++)
+        printf("%d ", connections[i]);
+    printf("\n");
+}
+
+void readFTConnections(pid_t *connections, int _id){                    // Reads all the nodes connections. Debug only!
+    printf("Connections of %d: ", _id);
     for(int i = 1; i < connections[0]+1; i++)
         printf("%d ", connections[i]);
     printf("\n");

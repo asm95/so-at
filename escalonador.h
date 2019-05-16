@@ -7,6 +7,7 @@
 #include <sys/stat.h>       // Includes POSIX File Characteristics Library
 #include <signal.h>         // Includes the Signal definitions
 #include <string.h>         // Includes the String Library
+#include <sys/shm.h>
 
 #ifdef _MSG_QUEUE_H
     #include "msgQueue/msgQueue.h"
@@ -14,7 +15,7 @@
 #include "dataStructures.h"
 #include "managerProcess.h"
 
-void delayed_scheduler(void *connections, int _managers); // Ongoing
+void delayed_scheduler(int _managers); // Ongoing
 void shutdown();
 void new_schedule();
 void send_pid();

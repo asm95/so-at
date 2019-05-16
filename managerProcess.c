@@ -14,21 +14,23 @@ void manager_process(int _id, pid_t *connections, char *option){
     signal(SIGQUIT, manager_exit);
 
     msqid  = get_channel(MQ_SM);
+    if(msqid < 0){
+        printf("Error while getting the message qeue...\n");
+        exit(0);
+    }
+
     recebido = -1;
 
     while(1){
         while(1){
-            recebido = msgrcv(msqid, &p, sizeof(msg_packet), 0x2+_id, IPC_NOWAIT);
+            recebido = msgrcv(msqid, &p, sizeof(msg_packet)-sizeof(long), 0x2+_id, IPC_NOWAIT);
             if(recebido != -1)
                 break;
 
-            recebido = msgrcv(msqid, &p, sizeof(msg_packet), 19+_id, IPC_NOWAIT);
+            recebido = msgrcv(msqid, &p, sizeof(msg_packet)-sizeof(long), 19+_id, IPC_NOWAIT);
             if(recebido != -1)
                 break;
-            // Receber msg de volta para o escalonador!
         }
-
-        // Checar o tipo de recepção realizado e tratar de acordo!
 
         if(p._mdst != _id){
             if(p.type == 0x2 + _id){
@@ -76,6 +78,7 @@ void manager_process(int _id, pid_t *connections, char *option){
             }
         } else {
             if(p.ready == 0){
+                printf("Receiving program to execute!\n");
                 program = p.name;
                 delay = p.delay;
 

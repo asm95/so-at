@@ -47,15 +47,16 @@ void    listProcesses(execq *queue);
 void createFTree(fTree **_tree);
 void definesTree(fTree **_tree, int _parent, int *_node, int _level);
 void readTree(fTree *_tree);
-pid_t* get_fTreeConnection(fTree *_tree);
+pid_t* get_fTreeConnection(fTree *_tree, int _id);
 
 void createHyperTorus(hyperTorus **_ht);
 void definesHyper(hyperTorus **_hyper, int _id);
 void definesTorus(hyperTorus **_torus, int _id);
 void readHyperTorus(hyperTorus *ht);
-pid_t* get_htConnection(hyperTorus *_hyper);
+pid_t* get_htConnection(hyperTorus *_hyper, int _id);
 
-void readConnections(pid_t *connections);
+void readHTConnections(pid_t *connections, int _id);
+void readFTConnections(pid_t *connections, int _id);
 
 void createManQ(manq **_manq);
 void insertManQ(manq **_manq, int _id);

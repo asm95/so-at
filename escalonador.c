@@ -3,6 +3,8 @@
 #define HYPER "-h"
 #define TORUS "-t"
 #define FAT   "-f"
+#define SM_ID1 0x7497
+#define SM_ID2 0x8349
 
 // #define _GNU_SOURCE
 
@@ -68,7 +70,7 @@ void new_schedule(){
     recebido = msgrcv(msgsdid, &p, sizeof(msg_packet)-sizeof(long), 0x1, 0);
 
     insertProcess(&eq, p.name, p.delay);
-    system("clear");
+    printf("\n");
     printf("Job #\tProgram\t\tDelay\n");
     printf("-----------------------------\n");
     listProcesses(eq);                                                  // Prints the process queue
@@ -86,7 +88,9 @@ void send_pid(){
     enviado = msgsnd(msgsdid, &ppkg, sizeof(pid_packet)-sizeof(long), 0);
 }
 
-void delayed_scheduler(void *connections, int _managers){
+void unpause(){}
+
+void delayed_scheduler(int _managers){
     // Under Construction
     int msgsmid, enviado, recebido, count;
     long type;
@@ -102,9 +106,8 @@ void delayed_scheduler(void *connections, int _managers){
     createManQ(&_freep);                                                // Creates the queue for processes free to execute
     createManQ(&_ready);                                                // Creates the queue for processes ready for execution
 
-    msgsmid = create_channel(MQ_SM);                                    // Tries to open a Scheduler-Manager queue
+    msgsmid = get_channel(MQ_SM);
     if(msgsmid >= 0){                                                   // If message queue is open
-        printf("Schduler-Manager channel was created! Channel ID: %d\n", msgsmid);
         for(int i = 0; i < _managers; i++)
             insertManQ(&_freep, i);
 
@@ -123,14 +126,14 @@ void delayed_scheduler(void *connections, int _managers){
                     q->exec  = 0;
                     q->finished = 0;
 
-                    enviado = msgsnd(msgsmid, q, sizeof(msg_packet), 0);
+                    enviado = msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
                     free(f1);
                     free(q);
                 }
 
                 count = 0;
                 while(count < _managers){
-                    recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, 0);
+                    recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, IPC_NOWAIT);
                     if(recebido != -1){
                         insertManQSorted(&_ready, p._id);
                         printf("Process #%d is ready to execute!\n", p._id);
@@ -180,8 +183,9 @@ void delayed_scheduler(void *connections, int _managers){
 
 int main(int argc, char* argv[]){
     pid_t *connections, _parent;
-    int   _struct, _fork, _id, _status, aux = 0;
-    int msgsdid, msgsmid, enviado;
+    pid_t *ids, *pids, *sids, *spids;
+    int   _struct, _fork, _status, _id = 0 , aux = 0;
+    int msgsdid, msgsmid, shmid1, shmid2, enviado, i;
     fTree *ft;
     hyperTorus *ht;
     pid_packet *ppkg;
@@ -193,7 +197,7 @@ int main(int argc, char* argv[]){
 
     msgsdid = create_channel(MQ_SD);                                    // Tries to open a Scheduler-Delayed queue
     if(msgsdid >= 0){
-        printf("Schduler-Delayed channel was created! Channel ID: %d\n", msgsdid);
+        printf("Scheduler-Delayed channel was created! Channel ID: %d\n", msgsdid);
         ppkg = malloc(sizeof(pid_packet));
         ppkg->type = 0x1;
         ppkg->pid  = getpid();
@@ -201,11 +205,19 @@ int main(int argc, char* argv[]){
         enviado = msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
     }
 
-    if(msgsdid < 0 || msgsmid < 0){
+    if(msgsdid < 0){
         printf("Error while creating the queues. Terminating execution...\n");
         exit(0);
     }
 
+    msgsmid = create_channel(MQ_SM);
+    if(msgsmid >= 0)
+        printf("Scheduler-Manager channel was created! Channel ID: %d\n", msgsmid);
+    
+    if(msgsmid < 0 || msgsdid < 0){
+        printf("Error while creating the queues. Terminating execution...\n");
+        exit(0);
+    }
     /*
      * Checks if the scheduler was called with a argument.
      * If there was no argument defining the type of structure to be used, the program is finished.
@@ -215,16 +227,16 @@ int main(int argc, char* argv[]){
      */
     if(option == NULL){
         printf("Run the scheduler with one of the three options: -h, -t or -f...\n");
-        return 0;
+        exit(0);
     } else {
         if((strcmp(HYPER, option) != 0) && (strcmp(TORUS, option) != 0) && (strcmp(FAT, option) != 0)){
             printf("Invalid option! Try again with one of the three options: -h, -t or -f...\n");
-            return 0;
+            exit(0);
         } else {
             if(strcmp(FAT, option) == 0){                               // Fat Tree structure was selected. 15 children!
                 _struct = FATCHILDS;                                    // Prepares for 15 manager processes
                 createFTree(&ft);
-                definesTree(&ft, -1, &aux, 0);                           // Defines the Fat Tree structure
+                definesTree(&ft, -1, &aux, 0);                          // Defines the Fat Tree structure
                 // readTree(ft);                                           // Just for debug!!
             } else {                                                    // Hypercube or Torus was selected. 16 children!
                 _struct = CHILDS;                                       // Prepares for 16 manager processes
@@ -232,44 +244,44 @@ int main(int argc, char* argv[]){
                 if(strcmp(option, TORUS) == 0){
                     for(int i = 0; i < CHILDS; i++)
                         definesTorus(&ht, i);                           // Defines the Torus structure
-                    // readTorus(ht);                                      // Just for debug!!
+                    // readHyperTorus(ht);                                 // Just for debug!!
                 } else{
                     for(int i = 0; i < CHILDS; i++)
                         definesHyper(&ht, i);                           // Defines the Hypercube structure
-                    // readHyper(ht);                                      // Just for debug!!
+                    // readHyperTorus(ht);                                 // Just for debug!!
                 }
             }
         }
     }
 
+    pids = malloc(sizeof(pid_t)*_struct);
+    ids  = malloc(sizeof(pid_t)*_struct);
     for(int i = 0; i < _struct; i++){                                   // Creates the manager processes
         _fork = fork();
         if(_fork == 0)                                                  // Childs executes
             break;
-        else if(_fork == -1){                                           // Error on fork
+        else if(_fork > 0)
+            _id++;                                                      // Increments the count for the next manager
+        else {                                                          // Error on fork
             printf("Error while creating a new process...\n");
-            for(int j = 1; j <= i; j++)                                 // Loops through every process already created
-                kill(getpid()+j, SIGKILL);                              // ... And kills it.
+            for(int j = 0; j <= i; j++)                                 // Loops through every process already created
+                kill(pids[j], SIGKILL);                                 // ... And kills it.
             exit(1);
         }
     }
 
     if(_fork == 0){
         if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0)){
-            connections = get_htConnection(ht);                         // Verifies each process connections on the Hypercube/Torus structure
-            // readConnections(connections);                               // Just debug!!
+            connections = get_htConnection(ht, _id);                   // Verifies each process connections on the Hypercube/Torus structure
+            readHTConnections(connections, _id);                       // Just debug!!
         } else {
-            connections = get_fTreeConnection(ft);                      // Verifies each process connections on the Fat Tree structure
-            // readConnections(connections);                               // Just debug!!
+            connections = get_fTreeConnection(ft, _id);                // Verifies each process connections on the Fat Tree structure
+            readFTConnections(connections, _id);                       // Just debug!!
         }
 
-        sleep(1);
-        manager_process((getpid()-getppid()-1), connections, option);   // Manager routine
+        manager_process(_id, connections, option);                     // Manager routine
     } else{
-        if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0))
-            delayed_scheduler((void*)ht, _struct);                      // Calls the Delayed Scheduler Routine
-        else
-            delayed_scheduler((void*)ft, _struct);                      // Calls the Delayed Scheduler Routine
+        delayed_scheduler(_struct);                                    // Calls the Delayed Scheduler Routine
     }
 
     exit(0);

@@ -7,16 +7,15 @@
 #include "msgQueue/msgQueue.h"
 
 int main(int argc, char *argv[]){
+    int recebido;
     int msg_id = get_channel(MQ_SD);
     char *program;
+    int status;
+    msg_packet p;
+    pid_packet ppkg;
 
     if(msg_id >= 0){
-        int status;
-        msg_packet p;
-        pid_packet ppkg;
-
-        msgrcv(msg_id, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);
-        // printf("PID: %d\n", ppkg.pid);
+        recebido = msgrcv(msg_id, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);
         kill(ppkg.pid, SIGUSR1);
 
         p.type = 0x1;
@@ -25,7 +24,7 @@ int main(int argc, char *argv[]){
 
         status = msgsnd(msg_id, &p, sizeof(msg_packet) - sizeof(long), 0);
         if(status == 0){
-            // printf("Message successfully sent!\n");
+            printf("Message successfully sent!\n");
             kill(ppkg.pid, SIGUSR2);
         }
         else{
