@@ -1,5 +1,7 @@
 #include "dataStructures.h"
 
+int _jobs = 0;
+
 void createQueue(execq **queue){
     *queue = NULL;
 }
@@ -8,12 +10,14 @@ void insertProcess(execq **queue, char *_name, int _delay){
     execq *q1, *q2;
 
     q1 = malloc(sizeof(execq));
+    q1->job  = _jobs++;
     q1->name = malloc(sizeof(char)*strlen(_name));
     strcpy(q1->name, _name);
-    q1->delay = _delay;
+    q1->delay = (time(NULL)+_delay)-(time(NULL));
+    q1->sent  = time(NULL);
     q1->prox  = NULL;
 
-    if(*queue == NULL || (*queue)->delay >= q1->delay){
+    if(*queue == NULL || q1->delay <= (*queue)->delay){
         q1->prox = *queue;
         *queue = q1;
     } else{
@@ -41,7 +45,8 @@ execq* removeProcess(execq **queue){
 }
 
 void listProcesses(execq *queue){
-    int job = 0;
+    char buf[80];
+    struct tm ts;
     execq *q1;
 
     if(queue == NULL)
@@ -49,8 +54,25 @@ void listProcesses(execq *queue){
     else{
         q1 = queue;
         while(q1 != NULL){
-            printf("%d\t%s\t\t%d\n", job, q1->name, q1->delay);
-            job++;
+            ts  = *localtime(&(q1->delay));
+            strftime(buf, sizeof(buf), "%M-%S", &ts);
+            printf("%d\t%s\t\t%s\n", q1->job, q1->name, buf);
+            q1 = q1->prox;
+        }
+    }
+}
+
+void updateDelays(execq **queue){
+    time_t aux;
+    execq *q1;
+
+    if(*queue != NULL){
+        q1 = *queue;
+
+        while(q1 != NULL){
+            aux = time(NULL)-(q1->sent);
+            q1->delay -= aux;
+
             q1 = q1->prox;
         }
     }

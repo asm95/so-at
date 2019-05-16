@@ -3,13 +3,16 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 
 #define CHILDS 16
 #define FATCHILDS 15
 
 typedef struct execq {
+    int  job;
     char *name;
-    int  delay;
+    time_t delay;
+    time_t sent;
 
     struct execq *prox;
 } execq;
@@ -39,10 +42,11 @@ typedef struct manq{
     struct manq *next;
 } manq;
 
-void    createQueue(execq **queue);
-void    insertProcess(execq **queue, char *_name, int _delay);
+void   createQueue(execq **queue);
+void   insertProcess(execq **queue, char *_name, int _delay);
 execq* removeProcess(execq **queue);
-void    listProcesses(execq *queue);
+void   listProcesses(execq *queue);
+void   updateDelays(execq **queue);
 
 void createFTree(fTree **_tree);
 void definesTree(fTree **_tree, int _parent, int *_node, int _level);

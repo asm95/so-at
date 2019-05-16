@@ -78,7 +78,7 @@ void manager_process(int _id, pid_t *connections, char *option){
             }
         } else {
             if(p.ready == 0){
-                printf("Receiving program to execute!\n");
+                // printf("Receiving program to execute!\n");
                 program = p.name;
                 delay = p.delay;
 
@@ -101,13 +101,10 @@ void manager_process(int _id, pid_t *connections, char *option){
                 free(q);
             }
             if(p.exec == 1){
-                printf("%d: Order of execution received!\n", _id);
+                // printf("%d: Order of execution received!\n", _id);
                 _fork = fork();
                 
                 if(_fork == 0){
-                    signal(SIGALRM, start_exec);
-                    alarm(delay);
-                    pause();
                     if(execl(program, program, NULL) == -1)
                         exit(1);
                 } else {
