@@ -13,13 +13,15 @@ void insertProcess(execq **queue, char *_name, int _delay){
     q1->delay = _delay;
     q1->prox  = NULL;
 
-    if(*queue == NULL)
+    if(*queue == NULL || (*queue)->delay >= q1->delay){
+        q1->prox = *queue;
         *queue = q1;
-    else{
+    } else{
         q2 = *queue;
 
-        while(q2->prox != NULL)
+        while(q2->prox != NULL && (q1->delay >= q2->prox->delay))
             q2 = q2->prox;
+        q1->prox = q2->prox;
         q2->prox = q1;
     }
 }
