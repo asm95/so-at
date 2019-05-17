@@ -44,8 +44,10 @@ typedef struct manq{
 
 void   createQueue(execq **queue);
 void   insertProcess(execq **queue, char *_name, int _delay);
+void   insertDProcess(execq **queue, execq *eq);
 execq* removeProcess(execq **queue);
 void   listProcesses(execq *queue);
+void   listDProcesses(execq *queue);
 void   updateDelays(execq **queue);
 
 void createFTree(fTree **_tree);

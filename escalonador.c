@@ -3,10 +3,6 @@
 #define HYPER "-h"
 #define TORUS "-t"
 #define FAT   "-f"
-#define SM_ID1 0x7497
-#define SM_ID2 0x8349
-
-// #define _GNU_SOURCE
 
 /*
  * This is an implementation of a Delayed Scheduler that uses the following data structures:
@@ -36,6 +32,7 @@
 
 char *option;
 execq *eq;
+execq *ed;
 int  _alarm;
 int  msgsmid, _managers;
 manq *_freep; 
@@ -51,15 +48,27 @@ void shutdown(){
     
     printf("\nClosing Scheduler-Delayed channel...\n");
     delete_channel(msgsdid);
+
+    system("clear");
+
+    if(eq != NULL){
+        printf("The following won't execute:\n");
+        updateDelays(&eq);
+        listProcesses(eq);
+        printf("\n");
+    }
+
+    printf("Summary of execution:\n\n");
+    listDProcesses(ed);
     
     if(strcmp(option, FAT) == 0)
         for(int i = 0; i < FATCHILDS; i++){
-            kill(getpid() + (i+1), SIGKILL);
+            kill(getpid() + (i+1), SIGQUIT);
             wait(&status);                                              // Waits for all the children
         }
     else
         for(int i = 0; i < CHILDS; i++){
-            kill(getpid() + (i+1), SIGKILL);
+            kill(getpid() + (i+1), SIGQUIT);
             wait(&status);                                              // Waits for all the children
         }
         
@@ -77,16 +86,18 @@ void new_schedule(){
         _alarm = p.delay;
         alarm(_alarm);
     }
+    
     insertProcess(&eq, p.name, p.delay);
+    updateDelays(&eq);
     printf("\n");
-    printf("Job #\tProgram\t\tDelay\n");
-    printf("-----------------------------\n");
     listProcesses(eq);                                                  // Prints the process queue
     printf("\n\n");
     if(p.delay < _alarm){
         _alarm = p.delay;
         alarm(_alarm);
     }
+    if(p.delay == 0)
+        kill(getpid(), SIGALRM);
 }
 
 void send_pid(){
@@ -127,12 +138,12 @@ void something(){
     while(count < _managers){
         recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, IPC_NOWAIT);
         if(recebido != -1){
-            insertManQSorted(&_ready, p._id);
-            printf("Process #%d is ready to execute!\n", p._id);
+            insertManQ(&_ready, p._id);
             count++;
         }
     }
 
+    count = 0;
     while(_ready != NULL){
         r1 = removeManQ(&_ready);
 
@@ -145,33 +156,31 @@ void something(){
         q->exec  = 1;
         q->finished = 0;
 
-        printf("Sending execution order to %d\n", q->_mdst);
         enviado = msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
         free(r1);
         free(q);
-    }
-
-    count = 0;
-    while(1){
         recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, 0);
         if(recebido != -1){
             insertManQ(&_freep, p._id);
             count++;
         }
         if(count == _managers){
-            removeProcess(&eq);
+            insertDProcess(&ed, removeProcess(&eq));
             break;
         }
     }
 
     updateDelays(&eq);
     listProcesses(eq);
-    if(eq != NULL)
-        alarm(eq->delay);
+    if(eq != NULL){
+        if(eq->delay != 0)
+            alarm(eq->delay);
+        if(eq->delay == 0)
+            kill(getpid(), SIGALRM);
+    }
 }
 
 void delayed_scheduler(int managers){
-    // Under Construction
     _managers = managers;
 
     signal(SIGINT, shutdown);                                           // Defines a SIGINT treatment
@@ -180,6 +189,7 @@ void delayed_scheduler(int managers){
     signal(SIGALRM, something);
 
     createQueue(&eq);                                                   // Creates the queue of the programs to be executed
+    createQueue(&ed);
     createManQ(&_freep);                                                // Creates the queue for processes free to execute
     createManQ(&_ready);                                                // Creates the queue for processes ready for execution
 
@@ -288,7 +298,7 @@ int main(int argc, char* argv[]){
     if(_fork == 0){
         if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0)){
             connections = get_htConnection(ht, _id);                   // Verifies each process connections on the Hypercube/Torus structure
-            // readHTConnections(connections, _id);                       // Just debug!!
+            readHTConnections(connections, _id);                       // Just debug!!
         } else {
             connections = get_fTreeConnection(ft, _id);                // Verifies each process connections on the Fat Tree structure
             // readFTConnections(connections, _id);                       // Just debug!!

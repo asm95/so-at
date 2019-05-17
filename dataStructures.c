@@ -30,6 +30,19 @@ void insertProcess(execq **queue, char *_name, int _delay){
     }
 }
 
+void insertDProcess(execq **queue, execq *ed){
+    execq *e1;
+
+    if(*queue == NULL)
+        *queue = ed;
+    else{
+        e1 = *queue;
+        while(e1->prox != NULL)
+            e1 = e1->prox;
+        e1 = ed;
+    }
+}
+
 execq* removeProcess(execq **queue){
     execq *q1;
 
@@ -49,6 +62,9 @@ void listProcesses(execq *queue){
     struct tm ts;
     execq *q1;
 
+    printf("\nJob #\tProgram\t\tDelay\n");
+    printf("-----------------------------\n");
+
     if(queue == NULL)
         printf("No processes on execution queue...\n");
     else{
@@ -57,6 +73,26 @@ void listProcesses(execq *queue){
             ts  = *localtime(&(q1->delay));
             strftime(buf, sizeof(buf), "%M-%S", &ts);
             printf("%d\t%s\t\t%s\n", q1->job, q1->name, buf);
+            q1 = q1->prox;
+        }
+    }
+}
+
+void listDProcesses(execq *queue){
+    char buf[80];
+    struct tm ts;
+    execq *q1;
+
+    printf("Job #\tProgram\t\tCreated\tTerminated\tMakespan\n");
+    printf("-------------------------------------------------------------\n");
+
+    if(queue == NULL)
+        printf("There were no executions...\n");
+    else{
+        q1 = queue;
+        while(q1 != NULL){
+            //
+
             q1 = q1->prox;
         }
     }
@@ -71,7 +107,10 @@ void updateDelays(execq **queue){
 
         while(q1 != NULL){
             aux = time(NULL)-(q1->sent);
-            q1->delay -= aux;
+            if((q1->delay) - aux >= 0)
+                q1->delay -= aux;
+            else
+                q1->delay = 0;
 
             q1 = q1->prox;
         }
