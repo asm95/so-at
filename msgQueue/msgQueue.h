@@ -13,14 +13,16 @@ typedef struct msg_packet {
 
     char name[256];             // Program name for the scheduler
     int  delay;                 // Delay (in seconds) for execution
-
-    int _mdst;                  // ID of manager destination
     
-    // adicionar campos!
-    int _id;                    // Process ID
-    int ready;                  // Flag to indicate manager ready to execute
+    // Informação de comunicação
+    int _mdst;                  // ID of manager destination
+    int _id;
     int exec;                   // Flag to indicate manager to execute program
-    int finished;               // Flag to indicate manager finished execution
+
+    // Informação de execução
+    pid_t  pid;                 // PID of manager child
+    time_t begin;               // Manager child was created at
+    time_t end;                 // Manager child was terminated at
 } msg_packet;
 
 typedef struct pid_packet{

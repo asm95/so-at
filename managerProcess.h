@@ -1,7 +1,11 @@
 #include <sys/types.h>
+#include <sys/shm.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#define SHMID 0x8349
 
 #ifndef _SYS_LIBS_H
     #include <sys/signal.h>

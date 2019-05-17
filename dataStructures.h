@@ -11,11 +11,24 @@
 typedef struct execq {
     int  job;
     char *name;
-    time_t delay;
+    int  rDelay;
+    
+    time_t uDelay;
     time_t sent;
 
     struct execq *prox;
 } execq;
+
+typedef struct execd{
+    pid_t  pid;
+    char*  program;
+    time_t sent;
+    time_t begin;
+    time_t end;
+    double makespan;
+
+    struct execd *next;
+} execd;
 
 typedef struct fTree {
     pid_t id;                                       // ID of the process
@@ -42,13 +55,16 @@ typedef struct manq{
     struct manq *next;
 } manq;
 
-void   createQueue(execq **queue);
-void   insertProcess(execq **queue, char *_name, int _delay);
-void   insertDProcess(execq **queue, execq *eq);
-execq* removeProcess(execq **queue);
-void   listProcesses(execq *queue);
-void   listDProcesses(execq *queue);
-void   updateDelays(execq **queue);
+void createQueue(execq **queue);
+void insertProcess(execq **queue, char *_name, int _delay);
+void removeProcess(execq **queue);
+void listProcesses(execq *queue);
+void updateDelays(execq **queue);
+
+void createExecD(execd **done);
+void insertExecD(execd **done, pid_t pid, char* program, time_t sent, time_t begin, time_t end);
+void deleteExecD(execd **done);
+void listExecD(execd *done);
 
 void createFTree(fTree **_tree);
 void definesTree(fTree **_tree, int _parent, int *_node, int _level);

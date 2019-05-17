@@ -7,7 +7,6 @@
 #include <sys/stat.h>       // Includes POSIX File Characteristics Library
 #include <signal.h>         // Includes the Signal definitions
 #include <string.h>         // Includes the String Library
-#include <sys/shm.h>
 
 #ifdef _MSG_QUEUE_H
     #include "msgQueue/msgQueue.h"

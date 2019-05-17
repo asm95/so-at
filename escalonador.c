@@ -32,10 +32,9 @@
 
 char *option;
 execq *eq;
-execq *ed;
+execd *ed;
 int  _alarm;
-int  msgsmid, _managers;
-manq *_freep; 
+int  msgsmid, _managers; 
 manq *_ready;
 
 void shutdown(){
@@ -53,13 +52,15 @@ void shutdown(){
 
     if(eq != NULL){
         printf("The following won't execute:\n");
-        updateDelays(&eq);
         listProcesses(eq);
         printf("\n");
+        while(eq != NULL)
+            removeProcess(&eq);
     }
 
     printf("Summary of execution:\n\n");
-    listDProcesses(ed);
+    listExecD(ed);
+    deleteExecD(&ed);
     
     if(strcmp(option, FAT) == 0)
         for(int i = 0; i < FATCHILDS; i++){
@@ -76,11 +77,10 @@ void shutdown(){
 }
 
 void new_schedule(){
-    int recebido;
     int msgsdid = get_channel(MQ_SD);
     msg_packet p;
 
-    recebido = msgrcv(msgsdid, &p, sizeof(msg_packet)-sizeof(long), 0x1, 0);
+    msgrcv(msgsdid, &p, sizeof(msg_packet)-sizeof(long), 0x1, 0);
 
     if(eq == NULL){
         _alarm = p.delay;
@@ -101,47 +101,21 @@ void new_schedule(){
 }
 
 void send_pid(){
-    int enviado;
     int msgsdid = get_channel(MQ_SD);
     pid_packet ppkg;
 
     ppkg.type = 0x1;
     ppkg.pid  = getpid();
 
-    enviado = msgsnd(msgsdid, &ppkg, sizeof(pid_packet)-sizeof(long), 0);
+    msgsnd(msgsdid, &ppkg, sizeof(pid_packet)-sizeof(long), 0);
 }
 
-void something(){
-    int enviado, recebido, count;
-    manq *r1, *f1;
+void execute_job(){
+    int recebido, count;
+    manq *r1;
     msg_packet p, *q;
-
-    while(_freep != NULL){
-        f1 = removeManQ(&_freep);
-
-        q = malloc(sizeof(msg_packet));
-        q->type  = 0x2;
-        strcpy(q->name, eq->name);
-        q->delay = eq->delay;
-        q->_mdst = f1->_id;
-        q->_id = 0;
-        q->ready = 0;
-        q->exec  = 0;
-        q->finished = 0;
-
-        enviado = msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
-        free(f1);
-        free(q);
-    }
-
-    count = 0;
-    while(count < _managers){
-        recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, IPC_NOWAIT);
-        if(recebido != -1){
-            insertManQ(&_ready, p._id);
-            count++;
-        }
-    }
+    time_t begin, end;
+    double makespan;
 
     count = 0;
     while(_ready != NULL){
@@ -149,33 +123,41 @@ void something(){
 
         q = malloc(sizeof(msg_packet));
         q->type  = 0x2;
-        q->delay = 0;
+        strcpy(q->name, eq->name);
         q->_mdst = r1->_id;
-        q->_id = 0;
-        q->ready = 1;
+        q->_id   = r1->_id;
         q->exec  = 1;
-        q->finished = 0;
 
-        enviado = msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
+        msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
         free(r1);
         free(q);
         recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, 0);
+
+        insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);
+
+        if(count == 0)
+            begin = time(NULL);
         if(recebido != -1){
-            insertManQ(&_freep, p._id);
+            insertManQ(&_ready, p._id);
             count++;
         }
         if(count == _managers){
-            insertDProcess(&ed, removeProcess(&eq));
+            end = time(NULL);
+            makespan = difftime(end, begin);
+            printf("\njob=%d,\tprogram=%s,\tdelay=%d,\tmakespan=%.0lf segundos\n\n", eq->job, eq->name, eq->rDelay, makespan);
+            removeProcess(&eq);
+
             break;
         }
     }
 
     updateDelays(&eq);
     listProcesses(eq);
+    printf("\n");
     if(eq != NULL){
-        if(eq->delay != 0)
-            alarm(eq->delay);
-        if(eq->delay == 0)
+        if(eq->uDelay != 0)
+            alarm(eq->uDelay);
+        if(eq->uDelay == 0)
             kill(getpid(), SIGALRM);
     }
 }
@@ -186,17 +168,16 @@ void delayed_scheduler(int managers){
     signal(SIGINT, shutdown);                                           // Defines a SIGINT treatment
     signal(SIGUSR1, send_pid);                                          // Defines a SIGUSR1 treatment
     signal(SIGUSR2, new_schedule);                                      // Defines a SIGUSR2 treatment
-    signal(SIGALRM, something);
+    signal(SIGALRM, execute_job);
 
     createQueue(&eq);                                                   // Creates the queue of the programs to be executed
-    createQueue(&ed);
-    createManQ(&_freep);                                                // Creates the queue for processes free to execute
+    createExecD(&ed);
     createManQ(&_ready);                                                // Creates the queue for processes ready for execution
 
     msgsmid = get_channel(MQ_SM);
     if(msgsmid >= 0){                                                   // If message queue is open
         for(int i = 0; i < _managers; i++)
-            insertManQ(&_freep, i);
+            insertManQ(&_ready, i);
 
         while(1){}
     }
@@ -207,16 +188,14 @@ void delayed_scheduler(int managers){
 }
 
 int main(int argc, char* argv[]){
-    pid_t *connections, _parent;
-    pid_t *ids, *pids, *sids, *spids;
-    int   _struct, _fork, _status, _id = 0 , aux = 0;
-    int msgsdid, msgsmid, shmid1, shmid2, enviado, i;
+    pid_t *connections, *pids;
+    int   _struct, _fork, _id = 0 , aux = 0;
+    int msgsdid, msgsmid;
     fTree *ft;
     hyperTorus *ht;
     pid_packet *ppkg;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
-    _parent = getpid();                                                 // Receives the Scheduler PID
 
     printf("Attempting to create message queue...\n");
 
@@ -227,7 +206,7 @@ int main(int argc, char* argv[]){
         ppkg->type = 0x1;
         ppkg->pid  = getpid();
 
-        enviado = msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
+        msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
     }
 
     if(msgsdid < 0){
@@ -280,7 +259,6 @@ int main(int argc, char* argv[]){
     }
 
     pids = malloc(sizeof(pid_t)*_struct);
-    ids  = malloc(sizeof(pid_t)*_struct);
     for(int i = 0; i < _struct; i++){                                   // Creates the manager processes
         _fork = fork();
         if(_fork == 0)                                                  // Childs executes
@@ -298,7 +276,7 @@ int main(int argc, char* argv[]){
     if(_fork == 0){
         if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0)){
             connections = get_htConnection(ht, _id);                   // Verifies each process connections on the Hypercube/Torus structure
-            readHTConnections(connections, _id);                       // Just debug!!
+            // readHTConnections(connections, _id);                       // Just debug!!
         } else {
             connections = get_fTreeConnection(ft, _id);                // Verifies each process connections on the Fat Tree structure
             // readFTConnections(connections, _id);                       // Just debug!!

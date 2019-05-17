@@ -13,86 +13,50 @@ void insertProcess(execq **queue, char *_name, int _delay){
     q1->job  = _jobs++;
     q1->name = malloc(sizeof(char)*strlen(_name));
     strcpy(q1->name, _name);
-    q1->delay = (time(NULL)+_delay)-(time(NULL));
+    q1->rDelay = _delay;
+    q1->uDelay = (time(NULL)+_delay)-(time(NULL));
     q1->sent  = time(NULL);
     q1->prox  = NULL;
 
-    if(*queue == NULL || q1->delay <= (*queue)->delay){
+    if(*queue == NULL || q1->uDelay <= (*queue)->uDelay){
         q1->prox = *queue;
         *queue = q1;
     } else{
         q2 = *queue;
 
-        while(q2->prox != NULL && (q1->delay >= q2->prox->delay))
+        while(q2->prox != NULL && (q1->uDelay >= q2->prox->uDelay))
             q2 = q2->prox;
         q1->prox = q2->prox;
         q2->prox = q1;
     }
 }
 
-void insertDProcess(execq **queue, execq *ed){
-    execq *e1;
-
-    if(*queue == NULL)
-        *queue = ed;
-    else{
-        e1 = *queue;
-        while(e1->prox != NULL)
-            e1 = e1->prox;
-        e1 = ed;
-    }
-}
-
-execq* removeProcess(execq **queue){
+void removeProcess(execq **queue){
     execq *q1;
 
     if(*queue == NULL)
-        return NULL;
+        return;
     else{
         q1 = *queue;
         *queue = q1->prox;
         q1->prox = NULL;
     }
 
-    return q1;
+    free(q1);
 }
 
 void listProcesses(execq *queue){
-    char buf[80];
-    struct tm ts;
     execq *q1;
 
-    printf("\nJob #\tProgram\t\tDelay\n");
-    printf("-----------------------------\n");
+    printf("\n# Job     Program     At\n");
+    printf("--------------------------\n");
 
     if(queue == NULL)
         printf("No processes on execution queue...\n");
     else{
         q1 = queue;
         while(q1 != NULL){
-            ts  = *localtime(&(q1->delay));
-            strftime(buf, sizeof(buf), "%M-%S", &ts);
-            printf("%d\t%s\t\t%s\n", q1->job, q1->name, buf);
-            q1 = q1->prox;
-        }
-    }
-}
-
-void listDProcesses(execq *queue){
-    char buf[80];
-    struct tm ts;
-    execq *q1;
-
-    printf("Job #\tProgram\t\tCreated\tTerminated\tMakespan\n");
-    printf("-------------------------------------------------------------\n");
-
-    if(queue == NULL)
-        printf("There were no executions...\n");
-    else{
-        q1 = queue;
-        while(q1 != NULL){
-            //
-
+            printf("%d         %s       %d\n", q1->job, q1->name, q1->rDelay);
             q1 = q1->prox;
         }
     }
@@ -107,12 +71,76 @@ void updateDelays(execq **queue){
 
         while(q1 != NULL){
             aux = time(NULL)-(q1->sent);
-            if((q1->delay) - aux >= 0)
-                q1->delay -= aux;
+            if((q1->uDelay) - aux >= 0)
+                q1->uDelay -= aux;
             else
-                q1->delay = 0;
+                q1->uDelay = 0;
 
             q1 = q1->prox;
+        }
+    }
+}
+
+void createExecD(execd **done){
+    *done = NULL;
+}
+
+void insertExecD(execd **done, pid_t pid, char* program, time_t sent, time_t begin, time_t end){
+    execd *e1, *e2;
+
+    e1 = malloc(sizeof(execd));
+    e1->pid = pid;
+    e1->program = malloc(sizeof(char)*strlen(program));
+    strcpy(e1->program, program);
+    e1->sent  = sent;
+    e1->begin = begin;
+    e1->end   = end;
+    e1->makespan = difftime(end, begin);
+    e1->next = NULL;
+
+    if(*done == NULL)
+        *done = e1;
+    else{
+        e2 = *done;
+        while(e2->next != NULL)
+            e2 = e2->next;
+        e2->next = e1;
+    }
+}
+
+void deleteExecD(execd **done){
+    execd *e1, *e2;
+
+    if(*done != NULL){
+        e2 = *done;
+        while(e2 != NULL){
+            e1 = e2;
+            e2 = e2->next;
+            free(e1);
+        }
+    }
+}
+
+void listExecD(execd *done){
+    execd *e1;
+    char buf1[80], buf2[80], buf3[80];
+    struct tm ts, tb, te;
+
+    if(done != NULL){
+        printf("PID\tProgram\t\tSubmited\t\t\tBegun\t\t\t\tEnded\t\t\t\tMakespan (s)\n");
+        printf("-----------------------------------------------------------------------");
+        printf("-----------------------------------------------------------------------\n");
+        e1 = done;
+        while(e1 != NULL){
+            ts = *localtime(&e1->sent);
+            tb = *localtime(&e1->begin);
+            te = *localtime(&e1->end);
+            strftime(buf1, sizeof(buf1), "%Y-%m-%d %H:%M:%S", &ts);
+            strftime(buf2, sizeof(buf2), "%Y-%m-%d %H:%M:%S", &tb);
+            strftime(buf3, sizeof(buf3), "%Y-%m-%d %H:%M:%S", &te);
+
+            printf("%d\t%s\t\t%s\t\t%s\t\t%s\t\t%.0lf\n", e1->pid, e1->program, buf1, buf2, buf3, e1->makespan);
+            e1 = e1->next;
         }
     }
 }
