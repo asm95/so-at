@@ -33,8 +33,8 @@ void manager_process(int _id, pid_t *connections, char *option){
         }
 
         if(p._mdst != _id){
-            if(strcmp(option, "-t") == 0){
-                if(p.type == 0x2 + _id){
+            if(p.type == 0x2 + _id){
+                if(strcmp(option, "-t") == 0){
                     aux = p._mdst%4;
 
                     aux2 = 0;
@@ -52,19 +52,32 @@ void manager_process(int _id, pid_t *connections, char *option){
                             aux2 = aux2/4;
                     }
 
-                    q = malloc(sizeof(msg_packet));
-                    q->type = 0x2+aux2;
-                    strcpy(q->name, p.name);
-                    q->delay = p.delay;
-                    q->_mdst = p._mdst;
-                    q->_id = p._id;
-                    q->ready = p.ready;
-                    q->exec  = p.exec;
-                    q->finished = p.finished;
-                    
-                    enviado = msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);
-                    free(q);
-                } else if (p.type == 19 + _id){
+                    aux = aux2;
+                } else {
+                    for(int i = 1; i < connections[0]+1; i++){
+                        if(connections[i] < p._mdst && connections[i] != -1)
+                            aux = connections[i];
+                        if(p._mdst == connections[i]){
+                            aux = connections[i];
+                            break;
+                        }
+                    }
+                }
+
+                q = malloc(sizeof(msg_packet));
+                q->type = 0x2+aux;
+                strcpy(q->name, p.name);
+                q->delay = p.delay;
+                q->_mdst = p._mdst;
+                q->_id = p._id;
+                q->ready = p.ready;
+                q->exec  = p.exec;
+                q->finished = p.finished;
+                
+                enviado = msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);
+                free(q);
+            } else if(p.type == 19 + _id){
+                if(strcmp(option, "-t") == 0){
                     aux = 99;
 
                     for(int i = 1; i < connections[0]+1; i++){
@@ -82,44 +95,7 @@ void manager_process(int _id, pid_t *connections, char *option){
 
                     if(_id == 0)
                         aux = -1;
-
-                    q = malloc(sizeof(msg_packet));
-                    q->type = 19+aux;
-                    strcpy(q->name, p.name);
-                    q->delay = p.delay;
-                    q->_mdst = p._mdst;
-                    q->_id = p._id;
-                    q->ready = p.ready;
-                    q->exec  = p.exec;
-                    q->finished = p.finished;
-                    
-                    enviado = msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);
-                    free(q);
-                }
-            } else {
-                if(p.type == 0x2 + _id){
-                    for(int i = 1; i < connections[0]+1; i++){
-                        if(connections[i] < p._mdst && connections[i] != -1)
-                            aux = connections[i];
-                        if(p._mdst == connections[i]){
-                            aux = connections[i];
-                            break;
-                        }
-                    }
-
-                    q = malloc(sizeof(msg_packet));
-                    q->type = 0x2+aux;
-                    strcpy(q->name, p.name);
-                    q->delay = p.delay;
-                    q->_mdst = p._mdst;
-                    q->_id = p._id;
-                    q->ready = p.ready;
-                    q->exec  = p.exec;
-                    q->finished = p.finished;
-                    
-                    enviado = msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);
-                    free(q);
-                } else if(p.type == 19 + _id){
+                } else {
                     aux = 99;
                     for(int i = 1; i < connections[0]+1; i++){
                         if(connections[i] < aux)
@@ -129,18 +105,18 @@ void manager_process(int _id, pid_t *connections, char *option){
                             break;
                         }
                     }
-
-                    q = malloc(sizeof(msg_packet));
-                    q->type = 19+aux;
-                    q->_mdst = p._mdst;
-                    q->_id = p._id;
-                    q->ready = p.ready;
-                    q->exec  = p.exec;
-                    q->finished = p.finished;
-
-                    enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
-                    free(q);
                 }
+
+                q = malloc(sizeof(msg_packet));
+                q->type = 19+aux;
+                q->_mdst = p._mdst;
+                q->_id = p._id;
+                q->ready = p.ready;
+                q->exec  = p.exec;
+                q->finished = p.finished;
+
+                enviado = msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
+                free(q);
             }
         } else {
             if(p.ready == 0){
@@ -216,5 +192,3 @@ void manager_process(int _id, pid_t *connections, char *option){
         }
     }
 }
-
-void start_exec(){}
