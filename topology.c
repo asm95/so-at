@@ -39,7 +39,7 @@ graph2D* new_graph(uint sz){
 
     // two vectors size sz
     // example of using the same malloc for multiple arrays
-    uint *block = (uint*) malloc(sizeof(int) * sz*3);
+    int *block = (int*) malloc(sizeof(int) * sz*3);
     if (block == NULL){
         free(g); free(edges); return NULL;
     }
@@ -152,7 +152,7 @@ void dijkstra(graph2D *g, uint source){
         g->prev[nid] = -1; // undefined
     }
 
-    pl_insert(g->priority_list, &pl_size, source, g->dist);
+    pl_insert(g->priority_list, &pl_size, source, (uint*)g->dist);
 
     uint current, new_dist;
     while (pl_has_el(g->priority_list, &pl_size)){
@@ -167,7 +167,7 @@ void dijkstra(graph2D *g, uint source){
             if (new_dist < g->dist[el]){
                 g->dist[el] = new_dist;
                 g->prev[el] = current;
-                pl_insert(g->priority_list, &pl_size, el, g->dist);
+                pl_insert(g->priority_list, &pl_size, el, (uint*)g->dist);
                 //pl_print(g->priority_list, pl_size);
             }
         }

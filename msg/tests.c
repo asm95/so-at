@@ -121,7 +121,7 @@ void test_channel_close(){
 const char *g_interrupt_msg = NULL;
 void dummy(int sig_id){
     if (g_interrupt_msg != NULL){
-        printf(g_interrupt_msg);
+        printf("%s", g_interrupt_msg);
     }
 }
 

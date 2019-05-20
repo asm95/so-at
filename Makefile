@@ -5,7 +5,7 @@ OBJ_DIR=obj
 all: es hello at
 
 # creates obj directory
-obj_dir:
+$(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 $(OBJ_DIR)/topology.o: topology.c
@@ -30,7 +30,7 @@ $(OBJ_DIR)/fork.o: fork.c
 	gcc --std=c99 -c fork.c -o $(OBJ_DIR)/fork.o
 
 
-es: obj_dir $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
+es: $(OBJ_DIR) $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
 	gcc $(OBJ_DIR)/topology.o \
 		$(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o \
 		$(OBJ_DIR)/fork.o -o es
