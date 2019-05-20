@@ -67,7 +67,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                 strcpy(q->name, p.name);
                 q->delay = p.delay;
                 q->_mdst = p._mdst;
-                q->exec  = p.exec;
+                // q->exec  = p.exec;
                 
                 msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);
                 free(q);
@@ -107,7 +107,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                 strcpy(q->name, p.name);
                 q->_mdst = p._mdst;
                 q->_id   = p._id;
-                q->exec  = p.exec;
+                // q->exec  = p.exec;
                 q->pid   = p.pid;
                 q->begin = p.begin;
                 q->end   = p.end;
@@ -116,7 +116,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                 free(q);
             }
         } else {
-            if(p.exec == 1){
+            // if(p.exec == 1){
                 _fork = fork();
                 
                 if(_fork == 0){
@@ -141,7 +141,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                     strcpy(q->name, p.name);
                     q->_mdst = -1;
                     q->_id   = _id;
-                    q->exec  = 0;
+                    // q->exec  = 0;
                     q->pid   = _fork;
                     q->begin = begin;
                     q->end   = end;
@@ -149,7 +149,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                     msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);
                     free(q);
                 }
-            }
+            // }
         }
     }
 }

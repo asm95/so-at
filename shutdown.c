@@ -13,7 +13,7 @@ int main(int argc, char *argv[]){
     if(msgqid >= 0){
         printf("Shuting down the scheduler...\n");
 
-        recebido = msgrcv(msgqid, &p, sizeof(pid_packet)-sizeof(long), 0x1, 0);
+        recebido = msgrcv(msgqid, &p, sizeof(pid_packet)-sizeof(long), 0x2, 0);
         if(recebido == 0)
             kill(p.pid, SIGINT);
         else

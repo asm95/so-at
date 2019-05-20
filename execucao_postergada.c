@@ -20,7 +20,7 @@ int main(int argc, char *argv[]){
         strcpy(p.name, argv[1]);
         p.delay = atoi(argv[2]);
 
-        status = msgsnd(msg_id, &p, sizeof(msg_packet) - sizeof(long), 0);
+        status = msgsnd(msg_id, &p, sizeof(msg_packet)-sizeof(long), 0);
         if(status == 0){
             printf("Message successfully sent!\n");
             kill(ppkg.pid, SIGUSR2);

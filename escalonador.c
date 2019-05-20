@@ -86,6 +86,8 @@ void new_schedule(){
     msg_packet p;
 
     msgrcv(msgsdid, &p, sizeof(msg_packet)-sizeof(long), 0x1, 0);
+    printf("Program: %s\n", p.name);
+    printf("Delay: %d\n", p.delay);
 
     if(eq == NULL){
         _alarm = p.delay;
@@ -131,7 +133,7 @@ void execute_job(){
         strcpy(q->name, eq->name);
         q->_mdst = r1->_id;
         q->_id   = r1->_id;
-        q->exec  = 1;
+        // q->exec  = 1;
 
         msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
         free(r1);
@@ -228,8 +230,9 @@ int main(int argc, char* argv[]){
                 ppkg = malloc(sizeof(pid_packet));
                 ppkg->type = 0x1;
                 ppkg->pid  = getpid();
-
                 msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
+
+                ppkg->type = 0x2;
                 msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
             }
 

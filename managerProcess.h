@@ -30,6 +30,8 @@ void manager_exit();
 /** \fn void manager_process(int _id, pid_t *connections, char *option)
  *  \brief Função de gerenciamento dos processos
  * 
+ *  <b>Visão Geral</b>
+ * 
  *  A função "managerProcess" executa um laço infinito para toda a execução.
  *  Dentro do laço, há um segundo laço infinito para recepção de mensagens.
  *  
@@ -49,6 +51,15 @@ void manager_exit();
  *  No caso da execução, o gerente executa um fork. O filho irá executar o programa de fato,
  *  enquanto que o gerente salva a hora de inicio da execução, aguarda a saída do filho, salva
  *  a hora de término da execução e envia a mensagem de conclusão da execução para o escalonador.
+ * 
+ *  <b>Calculo de rotas:</b>
+ *  - <b>Fat Tree e Hybercube</b>
+ *  
+ * TODO
+ * 
+ *  - <b>Torus</b>
+ * 
+ *  TODO
  * 
  *  \param int _id; ID do gerente (entre 0 e 15);
  *  \param pid_t *connections; Array com os id's dos gerentes ao qual se conecta;
