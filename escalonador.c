@@ -200,31 +200,6 @@ int main(int argc, char* argv[]){
 
     option = argv[1];                                                   // Receives the Scheduler struct type
 
-    printf("Attempting to create message queue...\n");
-
-    msgsdid = create_channel(MQ_SD);                                    // Tries to open a Scheduler-Delayed queue
-    if(msgsdid >= 0){
-        printf("Scheduler-Delayed channel was created! Channel ID: %d\n", msgsdid);
-        ppkg = malloc(sizeof(pid_packet));
-        ppkg->type = 0x1;
-        ppkg->pid  = getpid();
-
-        msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
-    }
-
-    if(msgsdid < 0){
-        printf("Error while creating the queues. Terminating execution...\n");
-        exit(0);
-    }
-
-    msgsmid = create_channel(MQ_SM);
-    if(msgsmid >= 0)
-        printf("Scheduler-Manager channel was created! Channel ID: %d\n", msgsmid);
-    
-    if(msgsmid < 0 || msgsdid < 0){
-        printf("Error while creating the queues. Terminating execution...\n");
-        exit(0);
-    }
     /*
      * Checks if the scheduler was called with a argument.
      * If there was no argument defining the type of structure to be used, the program is finished.
@@ -240,6 +215,32 @@ int main(int argc, char* argv[]){
             printf("Invalid option! Try again with one of the three options: -h, -t or -f...\n");
             exit(0);
         } else {
+            printf("Attempting to create message queue...\n");
+
+            msgsdid = create_channel(MQ_SD);                            // Tries to open a Scheduler-Delayed queue
+            if(msgsdid >= 0){
+                printf("Scheduler-Delayed channel was created! Channel ID: %d\n", msgsdid);
+                ppkg = malloc(sizeof(pid_packet));
+                ppkg->type = 0x1;
+                ppkg->pid  = getpid();
+
+                msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
+            }
+
+            if(msgsdid < 0){
+                printf("Error while creating the queues. Terminating execution...\n");
+                exit(0);
+            }
+
+            msgsmid = create_channel(MQ_SM);
+            if(msgsmid >= 0)
+                printf("Scheduler-Manager channel was created! Channel ID: %d\n", msgsmid);
+            
+            if(msgsmid < 0 || msgsdid < 0){
+                printf("Error while creating the queues. Terminating execution...\n");
+                exit(0);
+            }
+            
             if(strcmp(FAT, option) == 0){                               // Fat Tree structure was selected. 15 children!
                 _struct = FATCHILDS;                                    // Prepares for 15 manager processes
                 createFTree(&ft);
