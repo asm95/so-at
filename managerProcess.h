@@ -5,8 +5,6 @@
 #include <string.h>
 #include <time.h>
 
-#define SHMID 0x8349
-
 #ifndef _SYS_LIBS_H
     #include <sys/signal.h>
     #include <sys/types.h>
@@ -14,7 +12,7 @@
 #endif
 
 #ifndef _MSG_QUEUE_H
-    #include "msgQueue/msgQueue.h"
+    #include "msgQueue.h"
 #endif
 
 void manager_exit();

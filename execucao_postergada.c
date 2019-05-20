@@ -4,18 +4,16 @@
 #include <string.h>
 #include <sys/signal.h>
 
-#include "msgQueue/msgQueue.h"
+#include "msgQueue.h"
 
 int main(int argc, char *argv[]){
-    int recebido;
     int msg_id = get_channel(MQ_SD);
-    char *program;
     int status;
     msg_packet p;
     pid_packet ppkg;
 
     if(msg_id >= 0){
-        recebido = msgrcv(msg_id, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);
+        msgrcv(msg_id, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);
         kill(ppkg.pid, SIGUSR1);
 
         p.type = 0x1;

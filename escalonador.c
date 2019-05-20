@@ -131,6 +131,9 @@ void execute_job(){
         msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
         free(r1);
         free(q);
+    }
+
+    while(1){
         recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, 0);
 
         insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);

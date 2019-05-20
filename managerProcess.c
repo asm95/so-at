@@ -5,10 +5,7 @@ void manager_exit(){
 }
 
 void manager_process(int _id, pid_t *connections, char *option){
-    char *program;
-    int  delay;
-    int msqid, recebido, aux, aux2, _ndst, _fork, _status, _wait;
-    int shmid, *child;
+    int msqid, recebido, aux, aux2, _fork, _status;
     msg_packet p, *q;
     time_t begin, end;
 
@@ -121,19 +118,13 @@ void manager_process(int _id, pid_t *connections, char *option){
         } else {
             if(p.exec == 1){
                 _fork = fork();
-                shmid = shmget(SHMID, sizeof(pid_t), IPC_CREAT);
                 
                 if(_fork == 0){
-                    // shmid = shmget(SHMID, sizeof(pid_t), S_IWUSR);
-                    
-                    // child = (int*) shmat(shmid, (void*)0, 0);
-                    // child = malloc(sizeof(int));
-
                     if(execl(p.name, p.name, NULL) == -1)
                         exit(1);
                 } else {
                     begin = time(NULL);
-                    _wait = wait(&_status);
+                    wait(&_status);
                     if(WEXITSTATUS(_status) == 1)
                         printf("Error on executing the program %s...\n", p.name);
                     end = time(NULL);

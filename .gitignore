@@ -10,3 +10,7 @@ es
 
 # Detalhes
 deleteMQ.c
+
+# Hide the docs
+docs/*.*
+docs

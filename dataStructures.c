@@ -203,7 +203,6 @@ void readTree(fTree *_tree){                                            // Reads
 
 pid_t* get_fTreeConnection(fTree *_tree, int _id){                      // Gets all the processes connections on the Fat Tree structure
     pid_t *connections = NULL;
-    int i;
 
     if(_tree != NULL){                                                  // If the node is not NULL
         if(_tree->id == _id){                                           // Checks the PID against the ID
@@ -262,7 +261,7 @@ void definesHyper(hyperTorus **_hyper, int _id){
 
 void definesTorus(hyperTorus **_torus, int _id){
     hyperTorus *t1, *t2;
-    int i, j;
+    int j;
 
     t1 = malloc(sizeof(hyperTorus));
     t1->id = _id;
