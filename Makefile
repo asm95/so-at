@@ -2,7 +2,7 @@
 
 OBJ_DIR=obj
 
-all: es
+all: es hello at
 
 # creates obj directory
 obj_dir:
