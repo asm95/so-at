@@ -1,7 +1,10 @@
 #include "escalonador.h"
 
+//! Define o argumento para estrutura Hypercube
 #define HYPER "-h"
+//! Define o argumento para estrutura Torus
 #define TORUS "-t"
+//! Define o argumento para estrutura Fat Tree
 #define FAT   "-f"
 
 /*
@@ -30,13 +33,38 @@
  * >> The | symbol means OR
  */
 
+//! Variável que guarda a opção de estrutura do escalonador
 char *option;
+//! Fila de jobs pra execução
 execq *eq;
+//! Fila de jobs que já foram executados
 execd *ed;
+//! Variável que guarda o tempo - em segundos - para disparar o alarme
 int  _alarm;
-int  msgsmid, _managers; 
+//! Variável que guarda o ID da fila de mensagens entre escalonador e gerentes
+int  msgsmid;
+//! Variável que guarda a quantidade de gerentes para o escalonamento 
+int _managers;
+//! Fila de gerentes prontos para executar
 manq *_ready;
 
+/** \fn void shutdown()
+ *  \brief Função para finalização do escalonador
+ * 
+ *  A função shutdown é a responsável por finalizar a execução do escalonador. Ao receber um
+ *  sinal do tipo <b>SIGINT</b>, o escalonador deve fechar os canais de comunicação previamente abertos
+ *  e executar o sumário de execução.
+ * 
+ *  No sumário constam as seguintes informações:
+ *  - Processos que não foram executados (número do job, nome do programa e delay);
+ *  - Todos os processos executados por todos os gerentes (PID, nome do programa, hora de recepção,
+ *  hora de início da execução, hora de término da execução e makespan);
+ * 
+ *  Feito isso, a função espera pela finalização da execução dos processos gerentes, de forma a evitar
+ *  o aparecimento de processos zumbis.
+ * 
+ *  \return void
+ */
 void shutdown(){
     int status;
     int msgsmid = get_channel(MQ_SM);
@@ -62,16 +90,10 @@ void shutdown(){
     listExecD(ed);
     deleteExecD(&ed);
     
-    if(strcmp(option, FAT) == 0)
-        for(int i = 0; i < FATCHILDS; i++){
-            kill(getpid() + (i+1), SIGQUIT);
-            wait(&status);                                              // Waits for all the children
-        }
-    else
-        for(int i = 0; i < CHILDS; i++){
-            kill(getpid() + (i+1), SIGQUIT);
-            wait(&status);                                              // Waits for all the children
-        }
+    for(int i = 0; i < _managers; i++){
+        kill(getpid() + (i+1), SIGQUIT);
+        wait(&status);                                              // Waits for all the children
+    }
         
     exit(0);
 }

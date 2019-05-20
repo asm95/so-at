@@ -13,6 +13,7 @@ typedef struct msg_packet {
 
     char name[256];             // Program name for the scheduler
     int  delay;                 // Delay (in seconds) for execution
+    int  shutdown;
     
     // Informação de comunicação
     int _mdst;                  // ID of manager destination
