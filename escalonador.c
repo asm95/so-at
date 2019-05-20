@@ -48,23 +48,6 @@ int _managers;
 //! Fila de gerentes prontos para executar
 manq *_ready;
 
-/** \fn void shutdown()
- *  \brief Função para finalização do escalonador
- * 
- *  A função shutdown é a responsável por finalizar a execução do escalonador. Ao receber um
- *  sinal do tipo <b>SIGINT</b>, o escalonador deve fechar os canais de comunicação previamente abertos
- *  e executar o sumário de execução.
- * 
- *  No sumário constam as seguintes informações:
- *  - Processos que não foram executados (número do job, nome do programa e delay);
- *  - Todos os processos executados por todos os gerentes (PID, nome do programa, hora de recepção,
- *  hora de início da execução, hora de término da execução e makespan);
- * 
- *  Feito isso, a função espera pela finalização da execução dos processos gerentes, de forma a evitar
- *  o aparecimento de processos zumbis.
- * 
- *  \return void
- */
 void shutdown(){
     int status;
     int msgsmid = get_channel(MQ_SM);
@@ -92,7 +75,7 @@ void shutdown(){
     
     for(int i = 0; i < _managers; i++){
         kill(getpid() + (i+1), SIGQUIT);
-        wait(&status);                                              // Waits for all the children
+        wait(&status);                                                  // Waits for all the children
     }
         
     exit(0);
@@ -201,10 +184,10 @@ void delayed_scheduler(int managers){
 
     msgsmid = get_channel(MQ_SM);
     if(msgsmid >= 0){                                                   // If message queue is open
-        for(int i = 0; i < _managers; i++)
+        for(int i = 0; i < _managers; i++)                              // Initially all the managers are ready to execute
             insertManQ(&_ready, i);
 
-        while(1){}
+        while(1){}                                                      // Executes a busy waiting for new jobs
     }
     else{
         printf("Error on creating a new channel...\n");
@@ -246,6 +229,7 @@ int main(int argc, char* argv[]){
                 ppkg->type = 0x1;
                 ppkg->pid  = getpid();
 
+                msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
                 msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
             }
 

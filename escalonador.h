@@ -19,10 +19,8 @@
  * 
  *  A função delayed scheduler é a responsável pelo controle do escalonador.
  *  Aqui o escalonador inicialmente seta todos os processos gerentes como prontos,
- *  colocando-os na lista de "ready" e, feito isso, executa um "pause" enquanto espera
- *  pelo primeiro job.
- *  Após a recepção do primeiro job, o escalonador fica em busy waiting ao final de cada
- *  job.
+ *  colocando-os na lista de "ready" e, feito isso, o escalonador fica em busy waiting 
+ *  esperando novs jobs.
  * 
  *  A função prepara o tratamento de quatro sinais distintos (SIGINT, SIGUSR1, SIGUSR2 e SIGALRM)
  *  cada qual responsável por uma tarefa distinta: shutdown, send_pid, new_scheduler e execute_job
@@ -30,18 +28,25 @@
  * 
  *  Ao executar a função, caso não seja possível obter a fila, o escalonador é finalizado.
  * 
- *  A função ainda utiliza as seguintes funções em sua execução: get_channel(), createQueue(),
- *  createExecD(), createManQ(), insertManQ(), shutdown().
- * 
  *  \param int managers;
  *  \return void
  */
 void delayed_scheduler(int managers);
 
 /** \fn void shutdown()
- *  \brief Função de finalização do escalonador
+ *  \brief Função para finalização do escalonador
  * 
- *  TODO
+ *  A função shutdown é a responsável por finalizar a execução do escalonador. Ao receber um
+ *  sinal do tipo <b>SIGINT</b>, o escalonador deve fechar os canais de comunicação previamente abertos
+ *  e executar o sumário de execução.
+ * 
+ *  No sumário constam as seguintes informações:
+ *  - Processos que não foram executados (número do job, nome do programa e delay);
+ *  - Todos os processos executados por todos os gerentes (PID, nome do programa, hora de recepção,
+ *  hora de início da execução, hora de término da execução e makespan);
+ * 
+ *  Feito isso, a função espera pela finalização da execução dos processos gerentes, de forma a evitar
+ *  o aparecimento de processos zumbis.
  * 
  *  \return void
  */
@@ -57,8 +62,6 @@ void shutdown();
  *  o primeiro job que estava em primeiro da fila anteriormente, o alarme é atualizado. Caso o delay seja 0, a
  *  função executa um kill, enviando um SIGALRM para dar inicio imediato a execução do job.
  * 
- *  A função utiliza as seguintes funções: get_channel(), insertProcess(), updateDelays(), listProcesses().
- * 
  *  \return void
  */
 void new_schedule();
@@ -70,8 +73,6 @@ void new_schedule();
  *  com o programa "execucao_postergada". Toda vez que uma nova ordem de job é recebida, o escalonador recebe um sinal e
  *  deverá reenviar o seu PID para tal fila, de forma que quando a próxima execução do "execucao_postergada" ocorrer, terá
  *  o PID para a comunicação disponível.
- * 
- *  Utiliza as funções: get_channel()
  * 
  *  \return void
  */
@@ -98,10 +99,11 @@ void execute_job();
 
 /** \fn int main(int argc, char *argv[])
  *  
- *  A função principal do escalonador. Aqui ocorre toda a preparação para e execução do escalonador e de seus processos gerentes.
+ *  A função principal do escalonador. Aqui ocorre toda a preparação para a execução do escalonador e de seus processos gerentes.
  *  A execução começa recebendo o parâmetro de estrutura (-h, -t ou -f). Feito isso, os canais de comunicação são criados - um para
- *  comunicação com o programa "execucao_postergada" e outro os processos gerentes. O escalonador verifica o tipo de estrutura que
- *  foi escolhido para execução - hypercube, torus ou fat tree -, e cria os grafos ou a árvore simbólica dos nós gerentes.
+ *  comunicação com o programa "execucao_postergada" e "shutdown", e outro para os processos gerentes. O escalonador envia duas mensagens 
+ *  iniciais para comunicação com "execucao_postergada" e com o "shutdown". O escalonador verifica o tipo de estrutura que foi escolhido para 
+ *  execução - hypercube, torus ou fat tree -, e cria os grafos ou a árvore simbólica dos nós gerentes.
  * 
  *  Após a criação das estruturas simbólicas, o escalonador realiza os N forks para criação dos processos gerentes. Para cada criação
  *  o PID do filho é armazenado em um vetor, o "_id" é atualizado para o filho e, caso alguma chamada fork ocasione erro, os processos
@@ -109,9 +111,6 @@ void execute_job();
  * 
  *  Os filhos criados executam uma função para receber, da estrutura simbólica, as conexões que eles fazem e, a partir dai, seguem para
  *  execução da função de gerenciamento. O pai segue para execução da função de escalonador postergado.
- * 
- *  Funções utilizadas: create_channel(), createFTree(), definesTree(), createHyperTorus(), definesTorus(), definesHyper(),
- *  get_htConnections(), getfTreeConnections(), manager_process(), delayed_scheduler().
  * 
  *  \param argc; TODO
  *  \param *argv[]; TODO
