@@ -1,5 +1,6 @@
 #include "dataStructures.h"
 
+//! Contador de jobs executados
 int _jobs = 0;
 
 void createQueue(execq **queue){
@@ -374,25 +375,6 @@ void insertManQ(manq **_manq, int _id){
         r2 = *_manq;
         while(r2->next != NULL)
             r2 = r2->next;
-        r2->next = r1;
-    }
-}
-
-void insertManQSorted(manq **_manq, int _id){
-    manq *r1, *r2;
-
-    r1 = malloc(sizeof(manq));
-    r1->_id = _id;
-    r1->next = NULL;
-
-    if(*_manq == NULL || (*_manq)->_id < r1->_id){
-        r1->next = *_manq;
-        *_manq = r1;
-    } else{
-        r2 = *_manq;
-        while(r2->next != NULL && r1->_id < r2->next->_id)
-            r2 = r2->next;
-        r1->next = r2->next;
         r2->next = r1;
     }
 }

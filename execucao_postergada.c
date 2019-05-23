@@ -6,9 +6,7 @@
 
 #include "msgQueue.h"
 
-/** \file execucao_postergada.c
- *  
- *  \brief Programa para envio de job de execução postergada
+/** \brief Programa para envio de job de execução postergada
  *  
  *  O programa "execucao_postergada" deve receber exatamente dois argumentos:
  *  nome do programa e delay (em segundos).
