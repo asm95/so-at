@@ -96,22 +96,3 @@ void send_pid();
  *  \return void
  */
 void execute_job();
-
-/** \fn int main(int argc, char *argv[])
- *  
- *  A função principal do escalonador. Aqui ocorre toda a preparação para a execução do escalonador e de seus processos gerentes.
- *  A execução começa recebendo o parâmetro de estrutura (-h, -t ou -f). Feito isso, os canais de comunicação são criados - um para
- *  comunicação com o programa "execucao_postergada" e "shutdown", e outro para os processos gerentes. O escalonador envia duas mensagens 
- *  iniciais para comunicação com "execucao_postergada" e com o "shutdown". O escalonador verifica o tipo de estrutura que foi escolhido para 
- *  execução - hypercube, torus ou fat tree -, e cria os grafos ou a árvore simbólica dos nós gerentes.
- * 
- *  Após a criação das estruturas simbólicas, o escalonador realiza os N forks para criação dos processos gerentes. Para cada criação
- *  o PID do filho é armazenado em um vetor, o "_id" é atualizado para o filho e, caso alguma chamada fork ocasione erro, os processos
- *  que já tenham sido criados são terminados enviando um SIGKILL a eles.
- * 
- *  Os filhos criados executam uma função para receber, da estrutura simbólica, as conexões que eles fazem e, a partir dai, seguem para
- *  execução da função de gerenciamento. O pai segue para execução da função de escalonador postergado.
- * 
- *  \param argc; TODO
- *  \param *argv[]; TODO
- */

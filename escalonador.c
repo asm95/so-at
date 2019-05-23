@@ -45,40 +45,45 @@ int  _alarm;
 int  msgsmid;
 //! Variável que guarda a quantidade de gerentes para o escalonamento 
 int _managers;
+//! Array com os PIDs de todos os gerentes
+pid_t *pids;
 //! Fila de gerentes prontos para executar
 manq *_ready;
 
 void shutdown(){
     int status;
-    int msgsmid = get_channel(MQ_SM);
-    int msgsdid = get_channel(MQ_SD);
+    int msgsmid = get_channel(MQ_SM);                                   // Gets the first message queue ID
+    int msgsdid = get_channel(MQ_SD);                                   // Gets the second message queue ID
 
     printf("\nClosing Scheduler-Managers channel...\n");
-    delete_channel(msgsmid);
+    delete_channel(msgsmid);                                            // Closes the first message queue
     
     printf("\nClosing Scheduler-Delayed channel...\n");
-    delete_channel(msgsdid);
+    delete_channel(msgsdid);                                            // Closes the second message queue
 
-    system("clear");
+    system("clear");                                                    // Clears the screen
 
-    if(eq != NULL){
+    if(eq != NULL){                                                     // If there are jobs on the queue, prints that they won't execute
         printf("The following won't execute:\n");
         listProcesses(eq);
         printf("\n");
         while(eq != NULL)
-            removeProcess(&eq);
+            removeProcess(&eq);                                         // Frees the data of the queue
     }
 
     printf("Summary of execution:\n\n");
-    listExecD(ed);
-    deleteExecD(&ed);
+    if(ed != NULL){                                                     // If any jobs were executed, prints them
+        listExecD(ed);
+        deleteExecD(&ed);                                               // Frees the data of the queue
+    } else
+        printf("No jobs were executed!\n");
     
     for(int i = 0; i < _managers; i++){
-        kill(getpid() + (i+1), SIGQUIT);
+        kill(pids[i], SIGQUIT);                                         // Sends signals to all the children
         wait(&status);                                                  // Waits for all the children
     }
         
-    exit(0);
+    exit(0);                                                            // Terminates the execution
 }
 
 void new_schedule(){
@@ -89,32 +94,33 @@ void new_schedule(){
     printf("Program: %s\n", p.name);
     printf("Delay: %d\n", p.delay);
 
-    if(eq == NULL){
-        _alarm = p.delay;
-        alarm(_alarm);
+    if(eq == NULL){                                                     // If there are no jobs on the queue
+        _alarm = p.delay;                                               // Sets the _alarm to the job received
+        alarm(_alarm);                                                  // Sets a alarm with _alarm
     }
     
-    insertProcess(&eq, p.name, p.delay);
-    updateDelays(&eq);
+    insertProcess(&eq, p.name, p.delay);                                // Job is inserted to the queue
+    if(eq->prox != NULL)
+        updateDelays(&eq);                                              // Updates the delay if there are more than one job to be executed
     printf("\n");
     listProcesses(eq);                                                  // Prints the process queue
     printf("\n\n");
-    if(p.delay < _alarm){
-        _alarm = p.delay;
-        alarm(_alarm);
+    if(p.delay < _alarm){                                               // If the job being inserted has delay less then _alarm
+        _alarm = p.delay;                                               // _alarm is updated
+        alarm(_alarm);                                                  // Sets a new alarm to _alarm
     }
-    if(p.delay == 0)
-        kill(getpid(), SIGALRM);
+    if(p.delay == 0)                                                    // If the job being inserted has delay equal to 0
+        kill(getpid(), SIGALRM);                                        // Starts execution right away
 }
 
 void send_pid(){
-    int msgsdid = get_channel(MQ_SD);
+    int msgsdid = get_channel(MQ_SD);                                   // Gets the message queue ID
     pid_packet ppkg;
 
-    ppkg.type = 0x1;
-    ppkg.pid  = getpid();
+    ppkg.type = 0x1;                                                    // Sets the message type
+    ppkg.pid  = getpid();                                               // Sends the Scheduler PID
 
-    msgsnd(msgsdid, &ppkg, sizeof(pid_packet)-sizeof(long), 0);
+    msgsnd(msgsdid, &ppkg, sizeof(pid_packet)-sizeof(long), 0);         // Sends the message
 }
 
 void execute_job(){
@@ -125,50 +131,49 @@ void execute_job(){
     double makespan;
 
     count = 0;
-    while(_ready != NULL){
+    while(_ready != NULL){                                              // Removes a process of the "ready" queue
         r1 = removeManQ(&_ready);
 
-        q = malloc(sizeof(msg_packet));
-        q->type  = 0x2;
-        strcpy(q->name, eq->name);
-        q->_mdst = r1->_id;
-        q->_id   = r1->_id;
-        // q->exec  = 1;
+        q = malloc(sizeof(msg_packet));                                 // Alocates the message
+        q->type  = 0x2;                                                 // Sets message type
+        strcpy(q->name, eq->name);                                      // Program name is sent with the message
+        q->_mdst = r1->_id;                                             // Destination manager is sent with the message
+        q->_id   = r1->_id;                                             // ID of the manager is sent with the message (Scheduler control)
 
-        msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
-        free(r1);
-        free(q);
+        msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);         // Message is sent
+        free(r1);                                                       // Frees the data of the manager
+        free(q);                                                        // Frees the data of the message
     }
 
-    while(1){
+    while(1){                                                           // Infinity loop while receiving messages
         recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, 0);
 
-        insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);
+        insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);      // Saves the execution data anwsered by the manager
 
-        if(count == 0)
+        if(count == 0)                                                  // When the first manager anwsers, saves the time
             begin = time(NULL);
-        if(recebido != -1){
-            insertManQ(&_ready, p._id);
-            count++;
+        if(recebido != -1){                                             // If no errors are reported when receiving the answer
+            insertManQ(&_ready, p._id);                                 // Manager goes back to the "ready" queue
+            count++;                                                    // Manager's count is incremented
         }
-        if(count == _managers){
-            end = time(NULL);
-            makespan = difftime(end, begin);
+        if(count == _managers){                                         // If Manager's count is equal to the number of Managers
+            end = time(NULL);                                           // Saves the time
+            makespan = difftime(end, begin);                            // Calculates the makespan
             printf("\njob=%d,\tprogram=%s,\tdelay=%d,\tmakespan=%.0lf segundos\n\n", eq->job, eq->name, eq->rDelay, makespan);
-            removeProcess(&eq);
+            removeProcess(&eq);                                         // Removes the job from the queue
 
-            break;
+            break;                                                      // Exits the loop
         }
     }
 
-    updateDelays(&eq);
-    listProcesses(eq);
+    updateDelays(&eq);                                                  // After a job is done, all jobs have their delays updated
+    listProcesses(eq);                                                  // Prints the queue of jobs left
     printf("\n");
-    if(eq != NULL){
-        if(eq->uDelay != 0)
-            alarm(eq->uDelay);
-        if(eq->uDelay == 0)
-            kill(getpid(), SIGALRM);
+    if(eq != NULL){                                                     // If the are jobs left
+        if(eq->uDelay != 0)                                             // And the first job of the queue has delay different than "0"
+            alarm(eq->uDelay);                                          // Sets the alarm to that jobs delay
+        if(eq->uDelay == 0)                                             // If the first job of the queue has delay equal to 0
+            kill(getpid(), SIGALRM);                                    // Starts the execution right away
     }
 }
 
@@ -197,8 +202,26 @@ void delayed_scheduler(int managers){
     }
 }
 
+/** \brief Escalonador de processos via estruturas Hypercube, Torus ou Fat Tree.
+ *  
+ *  A função principal do escalonador. Aqui ocorre toda a preparação para a execução do escalonador e de seus processos gerentes.
+ *  A execução começa recebendo o parâmetro de estrutura (-h, -t ou -f). Feito isso, os canais de comunicação são criados - um para
+ *  comunicação com o programa "execucao_postergada" e "shutdown", e outro para os processos gerentes. O escalonador envia duas mensagens 
+ *  iniciais para comunicação com "execucao_postergada" e com o "shutdown". O escalonador verifica o tipo de estrutura que foi escolhido para 
+ *  execução - hypercube, torus ou fat tree -, e cria os grafos ou a árvore simbólica dos nós gerentes.
+ * 
+ *  Após a criação das estruturas simbólicas, o escalonador realiza os N forks para criação dos processos gerentes. Para cada criação
+ *  o PID do filho é armazenado em um vetor, o "_id" é atualizado para o próximo filho e, caso alguma chamada fork ocasione erro, os processos
+ *  que já tenham sido criados são terminados enviando um SIGKILL a eles.
+ * 
+ *  Os filhos criados executam uma função para receber, da estrutura simbólica, as conexões que eles fazem e, a partir dai, seguem para
+ *  execução da função de gerenciamento. O pai segue para execução da função de escalonador postergado.
+ * 
+ *  \param argc; Quantidade de argumentos passados na CLI
+ *  \param *argv[]; Argumentos passados na CLI
+ */
 int main(int argc, char* argv[]){
-    pid_t *connections, *pids;
+    pid_t *connections;
     int   _struct, _fork, _id = 0 , aux = 0;
     int msgsdid, msgsmid;
     fTree *ft;
@@ -230,9 +253,6 @@ int main(int argc, char* argv[]){
                 ppkg = malloc(sizeof(pid_packet));
                 ppkg->type = 0x1;
                 ppkg->pid  = getpid();
-                msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
-
-                ppkg->type = 0x2;
                 msgsnd(msgsdid, ppkg, sizeof(pid_packet)-sizeof(long), 0);
             }
 
@@ -276,8 +296,10 @@ int main(int argc, char* argv[]){
         _fork = fork();
         if(_fork == 0)                                                  // Childs executes
             break;
-        else if(_fork > 0)
+        else if(_fork > 0){
+            pids[i] = _fork;
             _id++;                                                      // Increments the count for the next manager
+        }
         else {                                                          // Error on fork
             printf("Error while creating a new process...\n");
             for(int j = 0; j <= i; j++)                                 // Loops through every process already created

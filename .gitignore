@@ -7,9 +7,10 @@
 # program itself
 es
 *.out
-
-# Detalhes
-deleteMQ.c
+escalonador
+execucao_postergada
+hello
+shutdown
 
 # Hide the docs
 docs/*.*

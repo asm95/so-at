@@ -46,8 +46,8 @@ typedef struct pid_packet{
  *  
  *  A função é responsável por criar canais de comunicação (fila de mensages) 
  *  com base em uma chave <key>. O msgget é executado utilizando a <key> fornecida
- *  e utilizando a flag de criação IPC_CREAT e IPC_EXCL que torna o canal único para
- *  a chave fornecida.
+ *  e utilizando a flag de criação <b>IPC_CREAT</b> e <b>IPC_EXCL</b> que torna o 
+ *  canal único para a chave fornecida.
  *  
  *  \param int key; Chave para criação de uma fila de mensagens.
  *  \return int; Retorna o identificador da fila ou -1 em caso de erro.
