@@ -14,7 +14,7 @@ $(OBJ_DIR)/topology.o: topology.c
 # clear object files
 clear:
 	rm -rf obj/*
-	rm es
+	rm -f es at hello
 
 # Message Queue
 $(OBJ_DIR)/msg.o: msg/msg.c msg/msg.h common.h
