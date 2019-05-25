@@ -406,16 +406,13 @@ void parent_manager(to_proxy *topo, int *pid_vec){
     topology_init(topo, 0); // parent ID is always 0
 
     msg_packet p;
-    p.delay = 5;
-
-    // order to execute command to each node
 
     printf("(%3s) Waiting for messages on %d\n", "M", channel_id);
     int rcv_ok;
     while(! do_exit){
         // printf("(%3s) Value of finished_c is %d...\n", "M", finished_c);
         if (finished_c >= 0){
-            // means we're waiting for processes to finish
+            // means we're waiting for children nodes to finish
             if (finished_c == NRO_PROC-1){
                 // if everyone finished, then we reset the counter
                 printf("(%3s) Waiting for new processes\n", "M");
