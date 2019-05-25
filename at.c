@@ -28,13 +28,13 @@ void cli_main(int delay, char *prog_name){
 }
 
 int cli_check_prog_name(char *prog_name){
-    if( access( prog_name, R_OK|X_OK ) != -1 ) {
-        return 1;
-    }
     size_t name_len = strlen(prog_name);
     if (name_len > MAX_PROG_NAME-1){
         printf("(E) Invalid <prog_name> (%s). Max length is %d\n", prog_name, MAX_PROG_NAME-1);
         return 0;
+    }
+    if( access( prog_name, R_OK|X_OK ) != -1 ) {
+        return 1;
     }
     printf("(E) Invalid <prog_name> (%s). Make sure it exists and you have 'r-x' permissions\n", prog_name);
     return 0;
