@@ -1,8 +1,9 @@
 .PHONY: all
 
-OBJ_DIR=obj
+BIN_DIR=bin
+OBJ_DIR=$(BIN_DIR)/obj
 
-all: es hello at
+all: $(BIN_DIR)/es $(BIN_DIR)/hello $(BIN_DIR)/at
 
 # creates obj directory
 $(OBJ_DIR):
@@ -13,8 +14,7 @@ $(OBJ_DIR)/topology.o: topology.c
 
 # clear object files
 clear:
-	rm -rf obj/*
-	rm -f es at hello
+	rm -rf $(BIN_DIR)
 
 # Message Queue
 $(OBJ_DIR)/msg.o: msg/msg.c msg/msg.h common.h
@@ -42,14 +42,14 @@ $(OBJ_DIR)/fork.o: fork.c $(OBJ_DIR)/jobs.o $(OBJ_DIR)/master.o $(OBJ_DIR)/node.
 	gcc --std=c99 -c fork.c -o $(OBJ_DIR)/fork.o
 
 
-es: $(OBJ_DIR) $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
+$(BIN_DIR)/es: $(OBJ_DIR) $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
 	gcc $(OBJ_DIR)/topology.o \
 		$(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o \
 		$(OBJ_DIR)/fork.o $(OBJ_DIR)/jobs.o $(OBJ_DIR)/master.o $(OBJ_DIR)/node.o \
-		-o es
+		-o $(BIN_DIR)/es
 
-hello: hello.c
-	gcc hello.c -o hello
+$(BIN_DIR)/hello: hello.c
+	gcc hello.c -o $(BIN_DIR)/hello
 
-at: at.c $(OBJ_DIR)/msg.o
-	gcc at.c $(OBJ_DIR)/msg.o -o at
+$(BIN_DIR)/at: at.c $(OBJ_DIR)/msg.o
+	gcc at.c $(OBJ_DIR)/msg.o -o $(BIN_DIR)/at

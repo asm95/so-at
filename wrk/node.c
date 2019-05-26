@@ -3,9 +3,10 @@
 #include <stdlib.h> // for exit
 
 #include <signal.h> // for signal, SIGINT
-#include <unistd.h> // for getpid
+#include <unistd.h> // for getpid, usleep
 #include <sys/ipc.h> // for IPC_NOWAIT
 #include <sys/wait.h> // for wait, WNOHANG
+#include <sys/msg.h> // for msgsnd, msgrcv
 
 #include "../msg/msg.h" // for msg_packet
 #include "node.h"
