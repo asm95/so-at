@@ -10,6 +10,9 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
+#include "common.h"
+#include "globals.h"
+
 #include "topology.h"
 #include "msg/msg.h"
 #include "sch/jobs.h"
@@ -23,8 +26,6 @@ void print_path(int *arr, int sz){
         }
     }printf("\n");
 }
-
-#define NRO_PROC 5
 
 // it's a global variable because signal handlers doesn't provide any parameters
 int pid_vec[NRO_PROC];
@@ -390,49 +391,6 @@ void child_manager(to_proxy *topo){
     }
 }
 
-void parent_manager(to_proxy *topo, int *pid_vec){
-    printf("(%3s) Parent process (PID: %d)\n", "M", pid_vec[0]);
-
-    job_l = new_jl();
-
-    // check if communication channel exists
-    if (channel_id <= 0){
-        printf("(%3s) Failed to create channel %d. Exiting...\n", "M", MQ_ID);
-        shutdown();
-        return;
-    }
-
-    // will calculate routes for all nodes
-    topology_init(topo, 0); // parent ID is always 0
-
-    msg_packet p;
-
-    printf("(%3s) Waiting for messages on %d\n", "M", channel_id);
-    int rcv_ok;
-    while(! do_exit){
-        // printf("(%3s) Value of finished_c is %d...\n", "M", finished_c);
-        if (finished_c >= 0){
-            // means we're waiting for children nodes to finish
-            if (finished_c == NRO_PROC-1){
-                // if everyone finished, then we reset the counter
-                printf("(%3s) Waiting for new processes\n", "M");
-                remove_program();
-                // checks the list for the next job in the queue
-                check_job_queue(topo);
-            }
-        }
-        if (finished_c == -1){
-            // spawns the program imediatelly
-            dispatch_program(topo);
-        }
-        // printf("(%3s) Checking for new messages...\n", "M");
-        rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0);
-        if (rcv_ok > 0){ // did we read some bytes?
-            process_packet_master(&p, topo, &finished_c);
-        }
-    }
-}
-
 void close_channel(){
     int oid = open_channel();
     int sts = delete_channel(oid);
@@ -441,7 +399,7 @@ void close_channel(){
     }
 }
 
-void test_spawn_processes(to_types scheduler_topo){
+void bootstrap_app(to_types scheduler_topo){
     printf("(I) Gerenciador de Processos\n");
     printf("(I) Número de processos a serem criados: %d\n", NRO_PROC-1);
 
@@ -519,6 +477,6 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    test_spawn_processes(cli_topology);
+    bootstrap_app(cli_topology);
     return 0;
 }

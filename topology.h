@@ -1,3 +1,6 @@
+#ifndef TOPOLOGY_H
+#define TOPOLOGY_H
+
 typedef struct {
     char *edges;
     unsigned int size;
@@ -22,3 +25,5 @@ int         topology_init(to_proxy *el, unsigned int start);
 int         * topology_query(to_proxy *el, unsigned int start, unsigned int end, int *arr_sz);
 int         topology_search(to_proxy *el, unsigned int end, int *arr, int arr_sz);
 void        topology_clear(to_proxy *el);
+
+#endif

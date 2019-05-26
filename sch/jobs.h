@@ -1,3 +1,6 @@
+#ifndef JOBS_H
+#define JOBS_H
+
 #define MAX_PROG_NAME_JOBS 25
 
 typedef struct job_list_t {
@@ -15,3 +18,5 @@ void        push_front_jl(job_node **head, job_node *el);
 job_node *  pop_front_jl(job_node **head);
 job_node *  create_job(unsigned int sch_t, int delay, char *prog_name);
 int         get_jl_sz(job_node *head);
+
+#endif
