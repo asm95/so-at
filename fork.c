@@ -50,7 +50,7 @@ void exit_handler_parent(int sig_id){
 
 void exit_handler_child(int sig_id){
     printf("(C%2d) Exiting child\n", pid_id);
-    do_exit = 1;
+    terminate_child(1);
 }
 
 void route_print(msg_packet *p){

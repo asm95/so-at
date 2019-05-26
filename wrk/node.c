@@ -27,6 +27,10 @@ int get_real_pid(){
     return g_real_pid;
 }
 
+int terminate_child(int term_status){
+    g_do_exit = term_status;
+}
+
 void exec_program_mock(){
     int pid = fork();
     if (pid == 0){
