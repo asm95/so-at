@@ -16,6 +16,7 @@
 #include "topology.h"
 #include "msg/msg.h"
 #include "sch/jobs.h"
+#include "sch/master.h"
 
 
 void print_path(int *arr, int sz){
@@ -34,79 +35,12 @@ int job_id = 0;
 int child_state = 0;
 int exec_ord = 0;
 
-
-// we need to finish that thing
 job_node *job_l, *job_done_l = NULL;
 
-char * as_pretty_time(char *buf, long time_now){
-    struct tm * time_info;
-    time_info = localtime(&time_now);
-    if (time_info == NULL){
-        sprintf(buf, "%s", "<UNK>");
-        return buf;
-    }
-    sprintf(buf, "%02d:%02d",
-        time_info->tm_min,
-        time_info->tm_sec
-    );
-    return buf;
-}
-
-void print_summary(){
-    printf("(%3s) ~~ Resumo ~~\n", "M");
-    char time_buf[4][11];
-    job_node *el;
-    while(1){
-        el = pop_front_jl(&job_done_l);
-        if (!el){
-            break;
-        }
-        printf("%5sjob=%d, arquivo=%s, delay=%d, makespan=%.0f\n",
-            "", el->job_id, el->prog_name, el->delay,
-            (double)el->term_t - (double)el->sch_t
-        );
-        printf(
-            "%5s\tsch_t=%s,exc_t=%s,term_t=%s\n"
-            "%5s\texc_ord=%d\n",
-            "", as_pretty_time((char*)&time_buf[0], el->sch_t),
-                as_pretty_time((char*)&time_buf[1], el->exc_t),
-                as_pretty_time((char*)&time_buf[2], el->term_t),
-            "", el->exc_ord
-        );
-        free(el);
-    }
-    printf("%5s ~~ Jobs não executados ~~\n", "");
-    while(1){
-        el = pop_front_jl(&job_l);
-        if (!el){
-            break;
-        }
-        printf("%5sjob=%d, arquivo=%s, delay=%d, makespan=<UNK>\n",
-            "", el->job_id, el->prog_name, el->delay
-        );
-        free(el);
-    }
-
-}
-
-void shutdown(){
-    // shutdown steps
-    // breaks topology but kills the current executing processes
-    printf("(%3s) Shutdown process initiated\n", "M");
-    int status;
-    for (int id=1; id < NRO_PROC; id++){
-        // don't forget to do a waitpid on fork cus your process will turn into a zombie
-        // and zombies don't release their line in the process table!
-        // you can do a waitpid after the process exited
-        kill(pid_vec[id], SIGINT);
-        waitpid(pid_vec[id], &status, 0);
-    }
-    print_summary();
-}
 
 void exit_handler_parent(int sig_id){
     // will shutdown all programs and print the report
-    shutdown();
+    shutdown(pid_vec);
     delete_channel(channel_id);
     delete_jl(job_l);
     do_exit = 1;
@@ -285,16 +219,6 @@ void add_program(msg_packet *p, to_proxy *topo, int *finished_c){
         // means no one set an alarm, thus no program is executing
         check_spawn_delay(sch_t);
     }
-}
-
-void remove_program(){
-    if (job_done_l == NULL){
-        return;
-    }
-
-    job_node *el = job_done_l;
-
-    el->term_t = time(NULL);
 }
 
 void check_job_queue(to_proxy *topo){
