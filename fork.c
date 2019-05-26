@@ -12,6 +12,7 @@
 
 #include "topology.h"
 #include "msg/msg.h"
+#include "sch/jobs.h"
 
 
 void print_path(int *arr, int sz){
@@ -34,7 +35,6 @@ int exec_ord = 0;
 
 
 // we need to finish that thing
-#include "jobs.c"
 job_node *job_l, *job_done_l = NULL;
 
 char * as_pretty_time(char *buf, long time_now){

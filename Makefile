@@ -25,15 +25,19 @@ $(OBJ_DIR)/msg_tests.o: msg/tests.c msg/tests.h
 # includes all msg_queue modules
 msg_queue: $(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o
 
+# Main Module
+$(OBJ_DIR)/jobs.o: sch/jobs.c
+	gcc --std=c99 -c sch/jobs.c -o $(OBJ_DIR)/jobs.o
 
-$(OBJ_DIR)/fork.o: fork.c
+$(OBJ_DIR)/fork.o: fork.c $(OBJ_DIR)/jobs.o
 	gcc --std=c99 -c fork.c -o $(OBJ_DIR)/fork.o
 
 
 es: $(OBJ_DIR) $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
 	gcc $(OBJ_DIR)/topology.o \
 		$(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o \
-		$(OBJ_DIR)/fork.o -o es
+		$(OBJ_DIR)/fork.o $(OBJ_DIR)/jobs.o \
+		-o es
 
 hello: hello.c
 	gcc hello.c -o hello
