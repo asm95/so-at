@@ -4,7 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
-#include <string.h>
+#include <string.h> // for printf
 #include <time.h>
 
 #include <sys/ipc.h>
@@ -17,6 +17,7 @@
 #include "msg/msg.h"
 #include "sch/jobs.h"
 #include "sch/master.h"
+#include "wrk/node.h"
 
 
 void print_path(int *arr, int sz){
@@ -34,6 +35,7 @@ int pid_id, real_pid, channel_id, do_exit = 0;
 int job_id = 0;
 int child_state = 0;
 int g_exec_ord = 0;
+int finished_c = -2;
 
 job_node *job_l, *job_done_l = NULL;
 
@@ -51,132 +53,12 @@ void exit_handler_child(int sig_id){
     do_exit = 1;
 }
 
-
 void route_print(msg_packet *p){
     int idx = p->routing_idx;
     for(; idx < 16; idx++){
         printf("%d ", p->routing_path[idx]);
     }
     printf("\n");
-}
-
-void exec_program_mock(){
-    int pid = fork();
-    if (pid == 0){
-        // child will sleep for a while
-        int sleep_time = 3;
-        printf("(I) Hello! I'm sleeping for %d seconds\n", sleep_time);
-        sleep(sleep_time);
-        exit(0);
-    } else {
-        // node will now listen to the queue and wait for it's child termination
-        child_state = 1;
-    }
-}
-
-void exec_program_from_file(msg_packet *p){
-    int pid = fork();
-    if (pid == 0){
-        // child will replace it's in memory image
-        char prog_name_buffer[MAX_PROG_NAME + 2];
-        // append './' to the name of the program is important
-        // because the shell like behaviour of the execlp will search
-        // in the current directory
-        if (strncmp(p->prog_name, "./", 2) != 0 && p->prog_name[0] != '/'){
-            sprintf(prog_name_buffer, "./%s", p->prog_name);
-        }
-        execlp(prog_name_buffer, p->prog_name, (char *)NULL);
-        printf("(C%2d) Could not execute '%s'\n", pid_id, p->prog_name);
-        exit(0); // case in error
-    }
-}
-
-void exec_program(msg_packet *p){
-    // exec_program_mock()
-    exec_program_from_file(p);
-    // node will now listen to the queue and wait for it's child termination
-    child_state = 1;
-}
-
-void send_prog_finished(msg_packet *p, to_proxy *topo){
-    int next_node;
-
-    // search for route
-    p->routing_idx = topology_search(topo, 0x0, p->routing_path, 16); // search for master
-    p->ac = AC_FP;
-    p->pid_id = pid_id;
-    next_node = route_walk(p); // check which node should I send first
-    printf("(C%2d) Sending AC_FP to master via %d\n", pid_id, next_node);
-    msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // forward packet
-}
-
-void process_packet(msg_packet *p, to_proxy *topo){
-    int next_node = route_walk(p);
-    if (next_node >= 0){
-        printf("(C%2d) Packet is for %d\n", pid_id, next_node);
-        msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // forward packet
-    } else
-    if (next_node == -1){
-        printf("(C%2d) Packet is for me!\n", pid_id);
-        if (p->ac == AC_SP){
-            printf("(C%2d) Message for spawn program named '%s'\n", pid_id, p->prog_name);
-            exec_program(p);
-        }
-    }
-}
-
-
-int finished_c = -2;
-
-
-void child_state_wait_msg(to_proxy *topo){
-    int rcv_ok;
-    msg_packet p;
-
-    while(! do_exit && child_state == 0){
-        printf("(C%2d) Listining to slot 0x%02x on channel %d...\n", pid_id, pid_id+1, channel_id);
-        rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), pid_id+1, 0); // block
-        if (rcv_ok > 0){
-            process_packet(&p, topo);
-        }
-    }
-}
-
-void child_state_prog_running(to_proxy *topo){
-    int rcv_ok = -1;
-    msg_packet p;
-    const int sleep_intl = 100 * 1000; // in miliseconds
-
-    while (! do_exit){
-        rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), pid_id+1, IPC_NOWAIT | 0); // do not block
-        if (rcv_ok > 0){
-            process_packet(&p, topo);
-        }
-        usleep(sleep_intl);
-        waitpid(-1, &rcv_ok, WNOHANG | 0);
-        if (rcv_ok == 0){
-            send_prog_finished(&p, topo);
-            child_state = 0; break;
-        }
-    }
-}
-
-void child_manager(to_proxy *topo){
-    printf("(C%2d) Initiated process (PID: %d)\n", pid_id, real_pid);
-    topology_init(topo, pid_id);
-
-    int rcv_ok = -1;
-    channel_id = open_channel();
-    signal(SIGINT, exit_handler_child);
-    while (! do_exit){
-        switch(child_state){
-            case 1:
-                child_state_prog_running(topo); break;
-            case 0:
-            default:
-                child_state_wait_msg(topo); break;
-        }
-    }
 }
 
 void close_channel(){
@@ -210,7 +92,8 @@ void bootstrap_app(to_types scheduler_topo){
     }
 
     if (pid == 0){
-        child_manager(tp);
+        signal(SIGINT, exit_handler_child);
+        child_manager(tp, pid_id);
     } else {
         pid_vec[0] = getpid();
         signal(SIGINT, exit_handler_parent);

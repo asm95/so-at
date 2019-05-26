@@ -1,3 +1,6 @@
+#ifndef MSG_H
+#define MSG_H
+
 // id of message key
 #define MQ_ID 0x8349
 #define MAX_PROG_NAME 20
@@ -40,3 +43,5 @@ int recv_packet(int msg_id, msg_packet *p);
 
 // new interface that is flexible
 int send_msg(int channel_id, msg_packet *p);
+
+#endif

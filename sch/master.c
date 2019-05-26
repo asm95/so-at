@@ -1,6 +1,10 @@
 #include <stdio.h> // for printf, sprintf
 #include <stdlib.h> // for NULL
+#include <string.h> // for strncpy
+#include <sys/msg.h> // for msgsnd, msgrcv
 #include <signal.h> // for kill, SIGINT
+#include <wait.h> // for waitpid
+#include <unistd.h> // for alarm
 #include <time.h> // for localtime, tm
 
 #include "../common.h"
@@ -187,7 +191,7 @@ void spawn_program(msg_packet *p, to_proxy *topo){
     }
 }
 
-void dispatch_program(to_proxy *topo, int jobs_exec_ord){
+void dispatch_program(to_proxy *topo, int *jobs_exec_ord){
     int list_sz = get_jl_sz(job_l);
     if (list_sz <= 0){
         return;
@@ -200,8 +204,8 @@ void dispatch_program(to_proxy *topo, int jobs_exec_ord){
     p.prog_name[MAX_PROG_NAME-1] = '\0';
     spawn_program(&p, topo);
     el->exc_t = time(NULL);
-    el->exc_ord = jobs_exec_ord;
-    jobs_exec_ord += 1;
+    el->exc_ord = *jobs_exec_ord;
+    *jobs_exec_ord += 1;
     push_front_jl(&job_done_l, el);
     finished_c = 0;
 
@@ -255,7 +259,7 @@ void parent_manager(to_proxy *topo, int *pid_vec){
         }
         if (finished_c == -1){
             // spawns the program imediatelly
-            dispatch_program(topo, g_exec_ord);
+            dispatch_program(topo, &g_exec_ord);
         }
         // printf("(%3s) Checking for new messages...\n", "M");
         rcv_ok = msgrcv(channel_id, &p, sizeof(msg_packet) - sizeof(long), 0x1, 0);
