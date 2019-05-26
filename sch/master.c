@@ -3,7 +3,7 @@
 #include <string.h> // for strncpy
 #include <sys/msg.h> // for msgsnd, msgrcv
 #include <signal.h> // for kill, SIGINT
-#include <wait.h> // for waitpid
+#include <sys/wait.h> // for waitpid
 #include <unistd.h> // for alarm
 #include <time.h> // for localtime, tm
 
