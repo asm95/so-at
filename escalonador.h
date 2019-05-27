@@ -19,8 +19,8 @@
  * 
  *  A função delayed scheduler é a responsável pelo controle do escalonador.
  *  Aqui o escalonador inicialmente seta todos os processos gerentes como prontos,
- *  colocando-os na lista de "ready" e, feito isso, o escalonador fica em busy waiting 
- *  esperando novs jobs.
+ *  colocando-os na lista de "ready" e, feito isso, o escalonador fica bloqueado esperando
+ *  novos jobs.
  * 
  *  A função prepara o tratamento de quatro sinais distintos (SIGINT, SIGUSR1, SIGUSR2 e SIGALRM)
  *  cada qual responsável por uma tarefa distinta: shutdown, send_pid, new_scheduler e execute_job
@@ -91,7 +91,7 @@ void send_pid();
  *  escolhida para execução do escalonador), é imprimida a informação de resumo do job e o mesmo é removido da lista de jobs.
  *  O laço executa um break para concluir a execução e aguardar a próxima execução.
  * 
- *  O escalonador ficará em busy waiting esperando a próxima execução.
+ *  O escalonador ficará bloqueado esperando a próxima execução, ou inserção de jobs, caso a fila de execução esteja vazia.
  * 
  *  \return void
  */

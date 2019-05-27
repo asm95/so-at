@@ -194,8 +194,6 @@ void delayed_scheduler(int managers){
     if(msgsmid >= 0){                                                   // If message queue is open
         for(int i = 0; i < _managers; i++)                              // Initially all the managers are ready to execute
             insertManQ(&_ready, i);
-        
-        readManQ(_ready);
 
         while(1){
             if(eq == NULL)                                              // If there are no jobs to execute

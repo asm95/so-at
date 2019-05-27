@@ -33,24 +33,28 @@ void manager_exit();
  *  <b>Visão Geral</b>
  * 
  *  A função "managerProcess" executa um laço infinito para toda a execução.
- *  Dentro do laço, há um segundo laço infinito para recepção de mensagens.
+ *  Dentro, todos os tratamentos de mensagem e execução dos gerentes são realizados.
  *  
- *  Ao receber um dos tipos de mensagem ((0x2 + _id) ou (19 + _id)), é executado
- *  um break para tratar a mensagem recebida. Caso a mensagem recebida tenha como
- *  destino um outro gerente - que não o gerente que executou a recepção -, a
- *  mensagem é redirecionada para o gerente da lista de conexão mais próximo do destino,
- *  ou o próprio destino.
+ *  Ao receber uma mensagem, é verificado o destino da mesma. Se o destino for "-1",
+ *  O gerente sabe que a mensagem está fluindo no sentido do escalonador. Caso o destino
+ *  seja >= 0, o gerente sabe que a mensagem está fluindo no sentido dos gerentes.
+ *  
+ *  Caso a mensagem recebida tenha como destino um outro gerente - que não o gerente que 
+ *  executou a recepção -, a mensagem é redirecionada para o gerente da lista de conexão mais 
+ *  próximo do destino, ou o próprio destino. Caso a mensagem tenha como destino o gerente que 
+ *  a recebeu, ele faz o tratamento. 
  * 
- *  Caso a mensagem tenha como destino o gerente que a recebeu, ele faz o tratamento. As
- *  mensagens fluem em dois sentidos: do escalonador para os gerentes (0x2 + _id) e dos
- *  gerentes para o escalonador (19 + _id). Caso a mensagem siga o sentido escalonador-gerentes,
- *  O tratamento será para execução de um dado programa do job que está sendo executado.
- *  Caso contrário, a mensagem será redirecionada de forma a chegar no gerente 0 que irá passar
- *  para o escalonador.
+ *  Como dito anteriormente, as mensagens fluem em dois sentidos. No caso das mensagens que fluem
+ *  do escalonador para os gerentes, ao encontrarem os destinos certos, os gerentes dão início
+ *  a execução do programa solicitado pelo usuário e, após a execução ou erro da mesma, gerente
+ *  envia as informações resultantes para o escalonador.
  * 
- *  No caso da execução, o gerente executa um fork. O filho irá executar o programa de fato,
+ *  A execução é realizada da seguinte forma: o gerente executa um fork. O filho irá executar o programa de fato,
  *  enquanto que o gerente salva a hora de inicio da execução, aguarda a saída do filho, salva
  *  a hora de término da execução e envia a mensagem de conclusão da execução para o escalonador.
+ * 
+ *  No caso das mensagens fluindo na direção do escalonador, os gerentes apenas fazem o redirecionamento
+ *  sem maiores tratamentos.
  * 
  *  <b>Cálculo de rotas:</b>
  *  As rotas são traçadas em dois sentidos: escalonador -> gerentes; gerentes -> escalonador. Para
