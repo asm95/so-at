@@ -151,13 +151,13 @@ void execute_job(){
         insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);      // Saves the execution data anwsered by the manager
 
         if(count == 0)                                                  // When the first manager anwsers, saves the time
-            begin = time(NULL);
+            begin = p.begin;
         if(recebido != -1){                                             // If no errors are reported when receiving the answer
             insertManQ(&_ready, p._id);                                 // Manager goes back to the "ready" queue
             count++;                                                    // Manager's count is incremented
         }
         if(count == _managers){                                         // If Manager's count is equal to the number of Managers
-            end = time(NULL);                                           // Saves the time
+            end = p.end;                                           // Saves the time
             makespan = difftime(end, begin);                            // Calculates the makespan
             printf("\njob=%d,\tprogram=%s,\tdelay=%d,\tmakespan=%.0lf segundos\n\n", eq->job, eq->name, eq->rDelay, makespan);
             removeProcess(&eq);                                         // Removes the job from the queue
