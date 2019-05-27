@@ -9,6 +9,7 @@
 
 #include "../common.h"
 #include "../globals.h"
+#include "../util/log.h"
 #include "../topology.h"
 #include "../msg/msg.h"
 #include "jobs.h"
@@ -227,7 +228,7 @@ void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
 }
 
 void parent_manager(to_proxy *topo, int *pid_vec){
-    printf("(%3s) Parent process (PID: %d)\n", "M", pid_vec[0]);
+    log_master("Parent process (PID: %d)", pid_vec[0]);
 
     job_l = new_jl();
 
@@ -243,7 +244,7 @@ void parent_manager(to_proxy *topo, int *pid_vec){
 
     msg_packet p;
 
-    printf("(%3s) Waiting for messages on %d\n", "M", channel_id);
+    log_master("Waiting for messages on %d", channel_id);
     int rcv_ok;
     while(! do_exit){
         // printf("(%3s) Value of finished_c is %d...\n", "M", finished_c);
@@ -251,7 +252,7 @@ void parent_manager(to_proxy *topo, int *pid_vec){
             // means we're waiting for children nodes to finish
             if (finished_c == NRO_PROC-1){
                 // if everyone finished, then we reset the counter
-                printf("(%3s) Waiting for new processes\n", "M");
+                log_master("Waiting for new processes");
                 on_job_finished(job_done_l);
                 // checks the list for the next job in the queue
                 check_job_queue(topo);

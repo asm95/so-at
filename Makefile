@@ -25,20 +25,24 @@ $(OBJ_DIR)/msg_tests.o: msg/tests.c msg/tests.h
 # includes all msg_queue modules
 msg_queue: $(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o
 
+# Uitl Module
+$(OBJ_DIR)/log.o: util/log.c util/log.h
+	gcc --std=c99 -c util/log.c -o $(OBJ_DIR)/log.o
+
 # Main Module
 
 # master
-$(OBJ_DIR)/master.o: sch/master.c sch/master.h
+$(OBJ_DIR)/master.o: sch/master.c sch/master.h $(OBJ_DIR)/log.o
 	gcc --std=c99 -c sch/master.c -o $(OBJ_DIR)/master.o
 
 # worker
 $(OBJ_DIR)/node.o: wrk/node.c wrk/node.h
 	gcc --std=c99 -c wrk/node.c -o $(OBJ_DIR)/node.o
 
-$(OBJ_DIR)/jobs.o: sch/jobs.c
+$(OBJ_DIR)/jobs.o: sch/jobs.c sch/jobs.h
 	gcc --std=c99 -c sch/jobs.c -o $(OBJ_DIR)/jobs.o
 
-$(OBJ_DIR)/fork.o: fork.c $(OBJ_DIR)/jobs.o $(OBJ_DIR)/master.o $(OBJ_DIR)/node.o
+$(OBJ_DIR)/fork.o: fork.c sch/jobs.h sch/master.h wrk/node.h
 	gcc --std=c99 -c fork.c -o $(OBJ_DIR)/fork.o
 
 
@@ -46,6 +50,7 @@ $(BIN_DIR)/es: $(OBJ_DIR) $(OBJ_DIR)/topology.o msg_queue $(OBJ_DIR)/fork.o
 	gcc $(OBJ_DIR)/topology.o \
 		$(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o \
 		$(OBJ_DIR)/fork.o $(OBJ_DIR)/jobs.o $(OBJ_DIR)/master.o $(OBJ_DIR)/node.o \
+		$(OBJ_DIR)/log.o \
 		-o $(BIN_DIR)/es
 
 $(BIN_DIR)/hello: hello.c
