@@ -369,12 +369,15 @@ void insertManQ(manq **_manq, int _id){
     r1->_id  = _id;
     r1->next = NULL;
 
-    if(*_manq == NULL)
+    if(*_manq == NULL || (*_manq)->_id < r1->_id){
+        r1->next = *_manq;
         *_manq = r1;
+    }
     else{
         r2 = *_manq;
-        while(r2->next != NULL)
+        while(r2->next != NULL && r2->next->_id > r1->_id)
             r2 = r2->next;
+        r1->next = r2->next;
         r2->next = r1;
     }
 }

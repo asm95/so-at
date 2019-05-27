@@ -5,6 +5,12 @@
 *.vscode/
 
 # program itself
+at
+es
+hello
+escalonador
+execucao_postergada
+shutdown
 *.out
 
 # Hide the docs

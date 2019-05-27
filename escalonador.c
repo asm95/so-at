@@ -146,7 +146,7 @@ void execute_job(){
     }
 
     while(1){                                                           // Infinity loop while receiving messages
-        recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 18, 0);
+        recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 0x1, 0);
 
         insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);      // Saves the execution data anwsered by the manager
 
@@ -172,6 +172,7 @@ void execute_job(){
     if(eq != NULL){                                                     // If the are jobs left
         if(eq->uDelay != 0)                                             // And the first job of the queue has delay different than "0"
             alarm(eq->uDelay);                                          // Sets the alarm to that jobs delay
+            // _alarm = eq->uDelay;
         if(eq->uDelay == 0)                                             // If the first job of the queue has delay equal to 0
             kill(getpid(), SIGALRM);                                    // Starts the execution right away
     }
@@ -193,8 +194,13 @@ void delayed_scheduler(int managers){
     if(msgsmid >= 0){                                                   // If message queue is open
         for(int i = 0; i < _managers; i++)                              // Initially all the managers are ready to execute
             insertManQ(&_ready, i);
+        
+        readManQ(_ready);
 
-        while(1){}                                                      // Executes a busy waiting for new jobs
+        while(1){
+            if(eq == NULL)                                              // If there are no jobs to execute
+                pause();                                                // Pause execution until a new job arrives
+        }
     }
     else{
         printf("Error on creating a new channel...\n");

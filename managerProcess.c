@@ -5,7 +5,7 @@ void manager_exit(){
 }
 
 void manager_process(int _id, pid_t *connections, char *option){
-    int msqid, recebido, aux, aux2, _fork, _status;
+    int msqid, aux, aux2, _fork, _status;
     msg_packet p, *q;
     time_t begin, end;
 
@@ -17,21 +17,11 @@ void manager_process(int _id, pid_t *connections, char *option){
         exit(0);
     }
 
-    recebido = -1;
-
     while(1){
-        while(1){                                                                               // Executes non-blocked msgrcv's until something is received
-            recebido = msgrcv(msqid, &p, sizeof(msg_packet)-sizeof(long), 0x2+_id, IPC_NOWAIT);
-            if(recebido != -1)
-                break;
-
-            recebido = msgrcv(msqid, &p, sizeof(msg_packet)-sizeof(long), 19+_id, IPC_NOWAIT);
-            if(recebido != -1)
-                break;
-        }
+        msgrcv(msqid, &p, sizeof(msg_packet)-sizeof(long), 0x2+_id, 0);                         // Executes a blocked receive, waits for some msg to arrive
 
         if(p._mdst != _id){                                                                     // If the message received isn't for this manager, redirects!
-            if(p.type == 0x2 + _id){                                                            // The redirect follows the rules of scheduler to some manager
+            if(p._mdst >= 0){                                                                   // Checks if the direction is Scheduler->Managers
                 if(strcmp(option, "-t") == 0){                                                  // Torus calculus of the route
                     aux = p._mdst%4;                                                            // Checks the destination column on the Torus structure
 
@@ -70,7 +60,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                 
                 msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);                         // Sends the message
                 free(q);                                                                        // Frees the data of the message
-            } else if(p.type == 19 + _id){                                                      // The redirect follows the rules of some manager to scheduler
+            } else {                                                                            // The direction is Managers->Scheduler
                 if(strcmp(option, "-t") == 0){                                                  // Torus calculus of the route
                     aux = 99;
 
@@ -102,7 +92,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                 }
 
                 q = malloc(sizeof(msg_packet));                                                 // Allocates the message
-                q->type  = 19+aux;                                                              // Rewrites the message type to the type of the next node on the route
+                q->type  = 0x2+aux;                                                             // Rewrites the message type to the type of the next node on the route
                 strcpy(q->name, p.name);                                                        // Copies the program name
                 q->_mdst = p._mdst;                                                             // Copies the destination
                 q->_id   = p._id;                                                               // Copies the ID
@@ -134,7 +124,7 @@ void manager_process(int _id, pid_t *connections, char *option){
                         aux = connections[i];
                 }
 
-                q->type  = 19+aux;                                                              // Sets the type to the first node on the route
+                q->type  = 0x2+aux;                                                             // Sets the type to the first node on the route
                 strcpy(q->name, p.name);                                                        // Copies the program name
                 q->_mdst = -1;                                                                  // Writes the destination
                 q->_id   = _id;                                                                 // Writes the manager ID
