@@ -24,6 +24,8 @@ typedef struct msg_packet {
     int _mdst;
     //! ID do gerente para utilização do escalonador
     int _id;
+    //! Flag de finalização
+    int finish;
 
     //! PID do filho do gerente
     pid_t  pid;

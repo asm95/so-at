@@ -45,23 +45,16 @@ int  _alarm;
 int  msgsmid;
 //! Variável que guarda a quantidade de gerentes para o escalonamento 
 int _managers;
+//! Flag de finalização do sistema
+int finish = 0;
 //! Array com os PIDs de todos os gerentes
 pid_t *pids;
 //! Fila de gerentes prontos para executar
 manq *_ready;
 
 void shutdown(){
-    int status;
-    int msgsmid = get_channel(MQ_SM);                                   // Gets the first message queue ID
-    int msgsdid = get_channel(MQ_SD);                                   // Gets the second message queue ID
-
-    printf("\nClosing Scheduler-Managers channel...\n");
-    delete_channel(msgsmid);                                            // Closes the first message queue
-    
-    printf("\nClosing Scheduler-Delayed channel...\n");
-    delete_channel(msgsdid);                                            // Closes the second message queue
-
     system("clear");                                                    // Clears the screen
+    finish = 1;
 
     if(eq != NULL){                                                     // If there are jobs on the queue, prints that they won't execute
         printf("The following won't execute:\n");
@@ -77,13 +70,6 @@ void shutdown(){
         deleteExecD(&ed);                                               // Frees the data of the queue
     } else
         printf("No jobs were executed!\n");
-    
-    for(int i = 0; i < _managers; i++){
-        kill(pids[i], SIGQUIT);                                         // Sends signals to all the children
-        wait(&status);                                                  // Waits for all the children
-    }
-        
-    exit(0);                                                            // Terminates the execution
 }
 
 void new_schedule(){
@@ -139,6 +125,7 @@ void execute_job(){
         strcpy(q->name, eq->name);                                      // Program name is sent with the message
         q->_mdst = r1->_id;                                             // Destination manager is sent with the message
         q->_id   = r1->_id;                                             // ID of the manager is sent with the message (Scheduler control)
+        q->finish= 0;
 
         msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);         // Message is sent
         free(r1);                                                       // Frees the data of the manager
@@ -196,13 +183,16 @@ void delayed_scheduler(int managers){
             insertManQ(&_ready, i);
 
         while(1){
-            if(eq == NULL)                                              // If there are no jobs to execute
-                pause();                                                // Pause execution until a new job arrives
+            if(finish == 0){
+                if(eq == NULL)                                              // If there are no jobs to execute
+                    pause();                                                // Pause execution until a new job arrives
+            }
+            else
+                break;
         }
     }
     else{
-        printf("Error on creating a new channel...\n");
-        shutdown();
+        printf("Error on opening a new channel...\n");
     }
 }
 
@@ -227,10 +217,11 @@ void delayed_scheduler(int managers){
 int main(int argc, char* argv[]){
     pid_t *connections;
     int   _struct, _fork, _id = 0 , aux = 0;
-    int msgsdid, msgsmid;
+    int msgsdid, msgsmid, status;
     fTree *ft;
     hyperTorus *ht;
     pid_packet *ppkg;
+    msg_packet *q;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
 
@@ -325,6 +316,28 @@ int main(int argc, char* argv[]){
     } else{
         delayed_scheduler(_struct);                                    // Calls the Delayed Scheduler Routine
     }
+
+    if(strcmp(option, FAT) == 0)
+        deleteTree(&ft);
+    else
+        deleteHyperTorus(&ht);
+
+    for(int i = _managers - 1; i >= 0; i--){
+        q = malloc(sizeof(msg_packet));
+        q->type  = 0x2;
+        q->_mdst = i;
+        q->finish= 1;
+
+        msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
+        wait(&status);
+        free(q);
+    }
+
+    printf("\nClosing Scheduler-Managers channel...\n");
+    delete_channel(get_channel(MQ_SM));                                // Closes the first message queue
+    
+    printf("\nClosing Scheduler-Delayed channel...\n");
+    delete_channel(get_channel(MQ_SD));                                // Closes the second message queue
 
     exit(0);
 }

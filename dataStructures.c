@@ -202,6 +202,15 @@ void readTree(fTree *_tree){                                            // Reads
     }
 }
 
+void deleteTree(fTree **_tree){
+    if((*_tree)->right != NULL)
+        deleteTree(&(*_tree)->right);
+    if((*_tree)->left  != NULL)
+        deleteTree(&(*_tree)->left);
+
+    free(*_tree);
+}
+
 pid_t* get_fTreeConnection(fTree *_tree, int _id){                      // Gets all the processes connections on the Fat Tree structure
     pid_t *connections = NULL;
 
@@ -320,6 +329,17 @@ void readHyperTorus(hyperTorus *_ht){                                   // Reads
         printf("\n");
 
         h1 = h1->next;
+    }
+}
+
+void deleteHyperTorus(hyperTorus **_ht){
+    hyperTorus *h1, *h2;
+
+    h2 = *_ht;
+    while(h2->next != NULL){
+        h1 = h2;
+        h2 = h2->next;
+        free(h1);
     }
 }
 

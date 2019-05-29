@@ -227,6 +227,14 @@ void definesTree(fTree **_tree, int _parent, int *_node, int _level);
  */
 void readTree(fTree *_tree);
 
+/** \fn void deleteTree(fTree **_tree)
+ *  \brief Função padrão de deleção para estrutura Fat Tree (Binary Tree)
+ * 
+ *  \param fTree **_tree; Ponteiro para estrutura do tipo fTree;
+ *  \return void;
+ */
+void deleteTree(fTree **_tree);
+
 /** \fn pid_t* get_fTreeConnection(fTree *_tree, int _id)
  *  \brief Define as conexões de um dado processo gerente
  * 
@@ -314,6 +322,14 @@ void definesTorus(hyperTorus **_torus, int _id);
  *  \return void;
  */
 void readHyperTorus(hyperTorus *ht);
+
+/** \fn void deleteHyperTorus(hyperTorus **_ht)
+ *  \brief Função padrão de deleção das estruturas Hypercube e Torus
+ * 
+ *  \param hyperTorus **_ht; Ponteiro para estrutura do tipo hyperTorus;
+ *  \return void;
+ */
+void deleteHyperTorus(hyperTorus **ht);
 
 /** \fn pid_t* get_htConnection(hyperTorus *_hyper, int _id)
  *  \brief Define as conexões de um dado processo processo gerente
