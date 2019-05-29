@@ -37,16 +37,16 @@ void delayed_scheduler(int managers);
  *  \brief Função para finalização do escalonador
  * 
  *  A função shutdown é a responsável por finalizar a execução do escalonador. Ao receber um
- *  sinal do tipo <b>SIGINT</b>, o escalonador deve fechar os canais de comunicação previamente abertos
- *  e executar o sumário de execução.
+ *  sinal do tipo <b>SIGINT</b>, o escalonador deve printar as informações de resumo da execução,
+ *  bem como quaisquer jobs não executados.
+ * 
+ *  Além disso, a flag de finalização é setada para "1" e a execução do escalonador é concluída,
+ *  retornando para função main.
  * 
  *  No sumário constam as seguintes informações:
  *  - Processos que não foram executados (número do job, nome do programa e delay);
  *  - Todos os processos executados por todos os gerentes (PID, nome do programa, hora de recepção,
  *  hora de início da execução, hora de término da execução e makespan);
- * 
- *  Feito isso, a função espera pela finalização da execução dos processos gerentes, de forma a evitar
- *  o aparecimento de processos zumbis.
  * 
  *  \return void
  */

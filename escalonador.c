@@ -211,6 +211,10 @@ void delayed_scheduler(int managers){
  *  Os filhos criados executam uma função para receber, da estrutura simbólica, as conexões que eles fazem e, a partir dai, seguem para
  *  execução da função de gerenciamento. O pai segue para execução da função de escalonador postergado.
  * 
+ *  Ao retornar da função de escalonamento (devido ao shutdown), o processo irá remover as estruturas simbólicas da memória, enviar uma mensagem
+ *  a todos os gerentes para encerrarem a execução e esperar pelo exit dos mesmos. Por fim, as filas de mensagem serão removidas e o processo
+ *  finalizado.
+ * 
  *  \param argc; Quantidade de argumentos passados na CLI
  *  \param *argv[]; Argumentos passados na CLI
  */
