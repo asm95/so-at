@@ -73,29 +73,34 @@ void shutdown(){
 }
 
 void new_schedule(){
-    int msgsdid = get_channel(MQ_SD);
-    msg_packet p;
+    int msgsjid = get_channel(MQ_SJ);
+    int recebido;
+    msg_packet *p;
 
-    msgrcv(msgsdid, &p, sizeof(msg_packet)-sizeof(long), 0x1, 0);
-    printf("Program: %s\n", p.name);
-    printf("Delay: %d\n", p.delay);
-
-    if(eq == NULL){                                                     // If there are no jobs on the queue
-        _alarm = p.delay;                                               // Sets the _alarm to the job received
-        alarm(_alarm);                                                  // Sets a alarm with _alarm
+    while(1){
+        p = malloc(sizeof(msg_packet));
+        recebido = msgrcv(msgsjid, p, sizeof(msg_packet)-sizeof(long), 0x1, IPC_NOWAIT);
+        if(recebido != -1){
+            if(eq == NULL){                                             // If there are no jobs on the queue
+                _alarm = p->delay;                                      // Sets the _alarm to the job received
+                alarm(_alarm);                                          // Sets a alarm with _alarm
+            }
+            
+            insertProcess(&eq, p->name, p->delay);                      // Job is inserted to the queue
+            if(eq->prox != NULL)
+                updateDelays(&eq);                                      // Updates the delay if there are more than one job to be executed
+            printf("\n");
+            listProcesses(eq);                                          // Prints the process queue
+            printf("\n\n");
+            free(p);
+        } else
+            break;
     }
-    
-    insertProcess(&eq, p.name, p.delay);                                // Job is inserted to the queue
-    if(eq->prox != NULL)
-        updateDelays(&eq);                                              // Updates the delay if there are more than one job to be executed
-    printf("\n");
-    listProcesses(eq);                                                  // Prints the process queue
-    printf("\n\n");
-    if(p.delay < _alarm){                                               // If the job being inserted has delay less then _alarm
-        _alarm = p.delay;                                               // _alarm is updated
+    if(eq->rDelay < _alarm){                                            // If the job being inserted has delay less then _alarm
+        _alarm = eq->rDelay;                                            // _alarm is updated
         alarm(_alarm);                                                  // Sets a new alarm to _alarm
     }
-    if(p.delay == 0)                                                    // If the job being inserted has delay equal to 0
+    if(eq->rDelay == 0)                                                 // If the job being inserted has delay equal to 0
         kill(getpid(), SIGALRM);                                        // Starts execution right away
 }
 
@@ -133,23 +138,24 @@ void execute_job(){
     }
 
     while(1){                                                           // Infinity loop while receiving messages
-        recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 0x1, 0);
+        recebido = msgrcv(msgsmid, &p, sizeof(msg_packet)-sizeof(long), 0x1, IPC_NOWAIT);
+        if(recebido >= 0){
+            insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);      // Saves the execution data anwsered by the manager
 
-        insertExecD(&ed, p.pid, p.name, eq->sent, p.begin, p.end);      // Saves the execution data anwsered by the manager
+            if(count == 0)                                                  // When the first manager anwsers, saves the time
+                begin = p.begin;
+            if(recebido != -1){                                             // If no errors are reported when receiving the answer
+                insertManQ(&_ready, p._id);                                 // Manager goes back to the "ready" queue
+                count++;                                                    // Manager's count is incremented
+            }
+            if(count == _managers){                                         // If Manager's count is equal to the number of Managers
+                end = p.end;                                                // Saves the time
+                makespan = difftime(end, begin);                            // Calculates the makespan
+                printf("\njob=%d,\tprogram=%s,\tdelay=%d,\tmakespan=%.0lf segundos\n\n", eq->job, eq->name, eq->rDelay, makespan);
+                removeProcess(&eq);                                         // Removes the job from the queue
 
-        if(count == 0)                                                  // When the first manager anwsers, saves the time
-            begin = p.begin;
-        if(recebido != -1){                                             // If no errors are reported when receiving the answer
-            insertManQ(&_ready, p._id);                                 // Manager goes back to the "ready" queue
-            count++;                                                    // Manager's count is incremented
-        }
-        if(count == _managers){                                         // If Manager's count is equal to the number of Managers
-            end = p.end;                                                // Saves the time
-            makespan = difftime(end, begin);                            // Calculates the makespan
-            printf("\njob=%d,\tprogram=%s,\tdelay=%d,\tmakespan=%.0lf segundos\n\n", eq->job, eq->name, eq->rDelay, makespan);
-            removeProcess(&eq);                                         // Removes the job from the queue
-
-            break;                                                      // Exits the loop
+                break;                                                      // Exits the loop
+            }
         }
     }
 
@@ -159,7 +165,6 @@ void execute_job(){
     if(eq != NULL){                                                     // If the are jobs left
         if(eq->uDelay != 0)                                             // And the first job of the queue has delay different than "0"
             alarm(eq->uDelay);                                          // Sets the alarm to that jobs delay
-            // _alarm = eq->uDelay;
         if(eq->uDelay == 0)                                             // If the first job of the queue has delay equal to 0
             kill(getpid(), SIGALRM);                                    // Starts the execution right away
     }
@@ -221,7 +226,7 @@ void delayed_scheduler(int managers){
 int main(int argc, char* argv[]){
     pid_t *connections;
     int   _struct, _fork, _id = 0 , aux = 0;
-    int msgsdid, msgsmid, status;
+    int msgsdid, msgsmid, msgsjid, status;
     fTree *ft;
     hyperTorus *ht;
     pid_packet *ppkg;
@@ -263,8 +268,12 @@ int main(int argc, char* argv[]){
             msgsmid = create_channel(MQ_SM);
             if(msgsmid >= 0)
                 printf("Scheduler-Manager channel was created! Channel ID: %d\n", msgsmid);
+
+            msgsjid = create_channel(MQ_SJ);
+            if(msgsmid >= 0)
+                printf("Scheduler-Jobs channel was created! Channel ID: %d\n", msgsmid);
             
-            if(msgsmid < 0 || msgsdid < 0){
+            if(msgsmid < 0 || msgsdid < 0 || msgsjid < 0){
                 printf("Error while creating the queues. Terminating execution...\n");
                 exit(0);
             }
@@ -342,6 +351,9 @@ int main(int argc, char* argv[]){
     
     printf("\nClosing Scheduler-Delayed channel...\n");
     delete_channel(get_channel(MQ_SD));                                // Closes the second message queue
+
+    printf("\nClosing Scheduler-Jobs channel...\n");                   // Closes the third message queue
+    delete_channel(get_channel(MQ_SJ));
 
     exit(0);
 }

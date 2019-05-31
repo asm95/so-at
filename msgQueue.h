@@ -6,9 +6,11 @@
 #include <sys/stat.h>
 
 //! Chave para o canal de comunicação entre escalonador, execucao_postergada e shutdown.
-#define MQ_SD 0x7497
+#define MQ_SD 140080279
 //! Chave para o canal de comunicação entre escalonador e gerentes.
 #define MQ_SM 0x8349
+//! Chave para o canal de envio de Jobs
+#define MQ_SJ 1400802792
 
 //! Pacote de mensagem utilizado para comunicação entre escalonador, execucao_postergada e gerentes.
 typedef struct msg_packet {

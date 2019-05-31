@@ -37,7 +37,8 @@
  *  \return int;
  */
 int main(int argc, char *argv[]){
-    int msg_id = get_channel(MQ_SD);                                                        // Gets the message queue ID
+    int msgsdid = get_channel(MQ_SD);                                                       // Gets the message queue ID
+    int msgsjid = get_channel(MQ_SJ);
     int status, verify = 0;
     msg_packet p;
     pid_packet ppkg;
@@ -51,15 +52,15 @@ int main(int argc, char *argv[]){
         }
 
         if(verify == 0){                                                                    // If the arguments ara ok
-            if(msg_id >= 0){                                                                // If the message queue is loaded
-                msgrcv(msg_id, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);             // Receives the PID of the Scheduler
+            if(msgsdid >= 0){                                                               // If the message queue is loaded
+                msgrcv(msgsdid, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);            // Receives the PID of the Scheduler
                 kill(ppkg.pid, SIGUSR1);                                                    // Sends a SIGUSR1 to the Scheduler
 
                 p.type = 0x1;                                                               // Sets the message type
                 strcpy(p.name, argv[1]);                                                    // Copies the program name
                 p.delay = atoi(argv[2]);                                                    // Copies delay
 
-                status = msgsnd(msg_id, &p, sizeof(msg_packet)-sizeof(long), 0);            // Sends the message
+                status = msgsnd(msgsjid, &p, sizeof(msg_packet)-sizeof(long), 0);           // Sends the message
                 if(status == 0){                                                            // After the message was sent
                     printf("Message successfully sent!\n");
                     kill(ppkg.pid, SIGUSR2);                                                // Sends a SIGUSR2 to the Scheduler

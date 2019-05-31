@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 int main(){
-    sleep(1);
+    sleep(30);
     printf("Hello, world!\n");
     exit(0);
 }
