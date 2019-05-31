@@ -144,7 +144,7 @@ void execute_job(){
             count++;                                                    // Manager's count is incremented
         }
         if(count == _managers){                                         // If Manager's count is equal to the number of Managers
-            end = p.end;                                           // Saves the time
+            end = p.end;                                                // Saves the time
             makespan = difftime(end, begin);                            // Calculates the makespan
             printf("\njob=%d,\tprogram=%s,\tdelay=%d,\tmakespan=%.0lf segundos\n\n", eq->job, eq->name, eq->rDelay, makespan);
             removeProcess(&eq);                                         // Removes the job from the queue
@@ -184,8 +184,8 @@ void delayed_scheduler(int managers){
 
         while(1){
             if(finish == 0){
-                if(eq == NULL)                                              // If there are no jobs to execute
-                    pause();                                                // Pause execution until a new job arrives
+                if(eq == NULL)                                          // If there are no jobs to execute
+                    pause();                                            // Pause execution until a new job arrives
             }
             else
                 break;
@@ -280,11 +280,11 @@ int main(int argc, char* argv[]){
                 if(strcmp(option, TORUS) == 0){
                     for(int i = 0; i < CHILDS; i++)
                         definesTorus(&ht, i);                           // Defines the Torus structure
-                    // readHyperTorus(ht);                                 // Just for debug!!
+                    // readHyperTorus(ht);                                // Just for debug!!
                 } else{
                     for(int i = 0; i < CHILDS; i++)
                         definesHyper(&ht, i);                           // Defines the Hypercube structure
-                    // readHyperTorus(ht);                                 // Just for debug!!
+                    // readHyperTorus(ht);                                // Just for debug!!
                 }
             }
         }
@@ -309,32 +309,32 @@ int main(int argc, char* argv[]){
 
     if(_fork == 0){
         if((strcmp(option, HYPER) == 0) || (strcmp(option, TORUS) == 0)){
-            connections = get_htConnection(ht, _id);                   // Verifies each process connections on the Hypercube/Torus structure
+            connections = get_htConnection(ht, _id);                    // Verifies each process connections on the Hypercube/Torus structure
             // readHTConnections(connections, _id);                       // Just debug!!
         } else {
-            connections = get_fTreeConnection(ft, _id);                // Verifies each process connections on the Fat Tree structure
+            connections = get_fTreeConnection(ft, _id);                 // Verifies each process connections on the Fat Tree structure
             // readFTConnections(connections, _id);                       // Just debug!!
         }
 
-        manager_process(_id, connections, option);                     // Manager routine
+        manager_process(_id, connections, option);                      // Manager routine
     } else{
-        delayed_scheduler(_struct);                                    // Calls the Delayed Scheduler Routine
+        delayed_scheduler(_struct);                                     // Calls the Delayed Scheduler Routine
     }
 
     if(strcmp(option, FAT) == 0)
-        deleteTree(&ft);
+        deleteTree(&ft);                                                // Deletes the simbolic Fat Tree structure
     else
-        deleteHyperTorus(&ht);
+        deleteHyperTorus(&ht);                                          // Deletes the simbolic Hypercube/Torus structure
 
-    for(int i = _managers - 1; i >= 0; i--){
-        q = malloc(sizeof(msg_packet));
-        q->type  = 0x2;
-        q->_mdst = i;
-        q->finish= 1;
+    for(int i = _managers - 1; i >= 0; i--){                            // Loops through the managers IDs
+        q = malloc(sizeof(msg_packet));                                 // Allocates the message
+        q->type  = 0x2;                                                 // Sets the type for Manager 0
+        q->_mdst = i;                                                   // Sets the destination Manager
+        q->finish= 1;                                                   // Writes the finish flag
 
-        msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);
-        wait(&status);
-        free(q);
+        msgsnd(msgsmid, q, sizeof(msg_packet)-sizeof(long), 0);         // Sends the message
+        wait(&status);                                                  // Waits for the nth-Manager to be shutdown
+        free(q);                                                        // Frees the message data
     }
 
     printf("\nClosing Scheduler-Managers channel...\n");

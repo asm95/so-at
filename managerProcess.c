@@ -42,6 +42,7 @@ void manager_process(int _id, pid_t *connections, char *option){
 
                     aux = aux2;
                 } else {                                                                        // Hypercube and Fat Tree calculus of the route
+                    aux = 0;
                     for(int i = 1; i < connections[0]+1; i++){                                  // Checks if the nth-connection is less than the destination and different of -1
                         if(connections[i] < p._mdst && connections[i] != -1)
                             aux = connections[i];
@@ -57,7 +58,10 @@ void manager_process(int _id, pid_t *connections, char *option){
                 strcpy(q->name, p.name);                                                        // Copies the program name
                 q->delay = p.delay;                                                             // Copies the delay
                 q->_mdst = p._mdst;                                                             // Copies the destination
-                q->finish= p.finish;
+                q->finish= p.finish;                                                            // Copies the finish flag
+
+                // if(_id == 5)
+                    // printf("[%d]  Redirecionando para %d\n", _id, aux);                         // Debug only!
 
                 msgsnd(msqid, q, sizeof(msg_packet) - sizeof(long), 0);                         // Sends the message
                 free(q);                                                                        // Frees the data of the message
@@ -97,49 +101,55 @@ void manager_process(int _id, pid_t *connections, char *option){
                 strcpy(q->name, p.name);                                                        // Copies the program name
                 q->_mdst = p._mdst;                                                             // Copies the destination
                 q->_id   = p._id;                                                               // Copies the ID
-                q->finish= p.finish;
+                q->finish= p.finish;                                                            // Copies the finish flag
                 q->pid   = p.pid;                                                               // Copies the PID of the manager child
                 q->begin = p.begin;                                                             // Copies the beginning of the childs execution time
                 q->end   = p.end;                                                               // Copies the ending of the childs execution time
 
+                // if(_id != 0)
+                //     printf("[%d]  Redirecionando para %d\n", _id, aux);                         // Debug only!
+                
                 msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);                           // Sends the message
                 free(q);                                                                        // Frees the data of the message
             }
         } else {                                                                                // If the message received is for this manager
             if(p.finish == 0){
-                begin = time(NULL);                                                                 // Starts the clock
-                _fork = fork();                                                                     // Creates the child that will execute the program
+                begin = time(NULL);                                                             // Starts the clock
+                _fork = fork();                                                                 // Creates the child that will execute the program
                 
-                if(_fork == 0){                                                                     // Child tries to execute, if it fails, exits
+                if(_fork == 0){                                                                 // Child tries to execute, if it fails, exits
                     if(execl(p.name, p.name, NULL) == -1)
                         exit(1);
                 } else { 
-                    wait(&_status);                                                                 // Father waits for the end of the child
-                    if(WEXITSTATUS(_status) == 1)                                                   // If error on child execution, prints it
+                    wait(&_status);                                                             // Father waits for the end of the child
+                    if(WEXITSTATUS(_status) == 1)                                               // If error on child execution, prints it
                         printf("Error on executing the program %s...\n", p.name);
-                    end = time(NULL);                                                               // Stops the clock
+                    end = time(NULL);                                                           // Stops the clock
 
-                    q = malloc(sizeof(msg_packet));                                                 // Allocates the message
+                    q = malloc(sizeof(msg_packet));                                             // Allocates the message
                 
                     aux = 99;
-                    for(int i = 1; i < connections[0]+1; i++){                                      // Chooses to the send the message to the lowest ID connection
+                    for(int i = 1; i < connections[0]+1; i++){                                  // Chooses to the send the message to the lowest ID connection
                         if(connections[i] < aux)
                             aux = connections[i];
                     }
 
-                    q->type  = 0x2+aux;                                                             // Sets the type to the first node on the route
-                    strcpy(q->name, p.name);                                                        // Copies the program name
-                    q->_mdst = -1;                                                                  // Writes the destination
-                    q->_id   = _id;                                                                 // Writes the manager ID
-                    q->pid   = _fork;                                                               // Writes the child PID
-                    q->begin = begin;                                                               // Writes the time that the execution begun
-                    q->end   = end;                                                                 // Writes the time that the execution ended
+                    q->type  = 0x2+aux;                                                         // Sets the type to the first node on the route
+                    strcpy(q->name, p.name);                                                    // Copies the program name
+                    q->_mdst = -1;                                                              // Writes the destination
+                    q->_id   = _id;                                                             // Writes the manager ID
+                    q->finish= 0;                                                               // Writes the finish flag
+                    q->pid   = _fork;                                                           // Writes the child PID
+                    q->begin = begin;                                                           // Writes the time that the execution begun
+                    q->end   = end;                                                             // Writes the time that the execution ended
 
-                    msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);                           // Sends the message
-                    free(q);                                                                        // Frees the data of the message
+                    // printf("[%d]  Enviando resposta para %d\n", _id, aux);                   // Debug only!
+                    
+                    msgsnd(msqid, q, sizeof(msg_packet)-sizeof(long), 0);                       // Sends the message
+                    free(q);                                                                    // Frees the data of the message
                 }
             } else {
-                free(connections);
+                free(connections);                                                              // Frees the connections data
                 exit(0);
             }
         }

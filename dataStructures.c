@@ -67,17 +67,17 @@ void updateDelays(execq **queue){
     time_t aux;
     execq *q1;
 
-    if(*queue != NULL){
+    if(*queue != NULL){                                                                     // If the Jobs queue isn't empty
         q1 = *queue;
 
-        while(q1 != NULL){
-            aux = time(NULL)-(q1->sent);
-            if((q1->uDelay) - aux >= 0)
-                q1->uDelay -= aux;
-            else
-                q1->uDelay = 0;
+        while(q1 != NULL){                                                                  // Loops through all the jobs left
+            aux = time(NULL)-(q1->sent);                                                    // "aux" receives the difference of the time at this moment and the time the job was sent
+            if((q1->uDelay) - aux >= 0)                                                     // If the difference between the time the job is supposed to be executed and "aux" is greather than or equal to zero
+                q1->uDelay -= aux;                                                          // "aux" is subtracted of the Job's delay
+            else                                                                            // Else, if the job was supposed to be executed already
+                q1->uDelay = 0;                                                             // The Job's delay is set to 0
 
-            q1 = q1->prox;
+            q1 = q1->prox;                                                                  // Moves to the next job on the queue
         }
     }
 }

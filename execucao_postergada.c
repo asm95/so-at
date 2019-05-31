@@ -37,42 +37,42 @@
  *  \return int;
  */
 int main(int argc, char *argv[]){
-    int msg_id = get_channel(MQ_SD);
+    int msg_id = get_channel(MQ_SD);                                                        // Gets the message queue ID
     int status, verify = 0;
     msg_packet p;
     pid_packet ppkg;
 
-    if(argc == 3){
-        for(int i = 0; i < strlen(argv[2]); i++){
-            if(((int)argv[2][i] < 48) || ((int)argv[2][i] > 57)){
-                verify = 1;
+    if(argc == 3){                                                                          // Checks if there are exectly 3 arguments on the CLI
+        for(int i = 0; i < strlen(argv[2]); i++){                                           // Loops through the characters on the third argument
+            if(((int)argv[2][i] < 48) || ((int)argv[2][i] > 57)){                           // If the nth-character is not a number
+                verify = 1;                                                                 // Sets the flag
                 break;
             }
         }
 
-        if(verify == 0){
-            if(msg_id >= 0){
-                msgrcv(msg_id, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);
-                kill(ppkg.pid, SIGUSR1);
+        if(verify == 0){                                                                    // If the arguments ara ok
+            if(msg_id >= 0){                                                                // If the message queue is loaded
+                msgrcv(msg_id, &ppkg, sizeof(pid_packet)-sizeof(long), 0x1, 0);             // Receives the PID of the Scheduler
+                kill(ppkg.pid, SIGUSR1);                                                    // Sends a SIGUSR1 to the Scheduler
 
-                p.type = 0x1;
-                strcpy(p.name, argv[1]);
-                p.delay = atoi(argv[2]);
+                p.type = 0x1;                                                               // Sets the message type
+                strcpy(p.name, argv[1]);                                                    // Copies the program name
+                p.delay = atoi(argv[2]);                                                    // Copies delay
 
-                status = msgsnd(msg_id, &p, sizeof(msg_packet)-sizeof(long), 0);
-                if(status == 0){
+                status = msgsnd(msg_id, &p, sizeof(msg_packet)-sizeof(long), 0);            // Sends the message
+                if(status == 0){                                                            // After the message was sent
                     printf("Message successfully sent!\n");
-                    kill(ppkg.pid, SIGUSR2);
+                    kill(ppkg.pid, SIGUSR2);                                                // Sends a SIGUSR2 to the Scheduler
                 }
-                else{
+                else{                                                                       // If there was an error on sending the message
                     printf("Error while sending message...\n");
                     exit(1);
                 }
-            } else {
+            } else {                                                                        // If message queue ID wasn't loaded
                 printf("Theres no open channel...\n");
                 exit(2);
             }
-        } else {
+        } else {                                                                            // If third argument is not a number
             printf("Argument #2 must contain only numbers...\n");
         }
     } else {

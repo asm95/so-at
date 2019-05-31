@@ -23,17 +23,17 @@ int main(int argc, char *argv[]){
     int msgqid, recebido;
     pid_packet p;
 
-    msgqid = get_channel(MQ_SD);
-    if(msgqid >= 0){
+    msgqid = get_channel(MQ_SD);                                                            // Loads the message queue ID
+    if(msgqid >= 0){                                                                        // If message queue ID was loaded
         printf("Shuting down the scheduler...\n");
 
-        recebido = msgrcv(msgqid, &p, sizeof(pid_packet)-sizeof(long), 0x1, 0);
-        if(recebido > 0)
-            kill(p.pid, SIGINT);
-        else
-            printf("Error while receiving message...\n");
-    } else {
-        printf("Error on getting the message queue...\n");
+        recebido = msgrcv(msgqid, &p, sizeof(pid_packet)-sizeof(long), 0x1, 0);             // Receives the PID of the Scheduler
+        if(recebido > 0)                                                                    // If there was no problem receiving the message
+            kill(p.pid, SIGINT);                                                            // Sends a SIGINT to the Scheduler
+        else                                                                                // If there was a problem while receiving the message
+            printf("Error while receiving message...\n");                                   // Prints an error
+    } else {                                                                                // If the message queue wasn't loaded
+        printf("Error on getting the message queue...\n");                                  // Prints an error
     }
 
     exit(0);
