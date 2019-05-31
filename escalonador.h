@@ -5,6 +5,7 @@
 #include <sys/types.h>      // Includes the System Primitive Data Types
 #include <sys/wait.h>       // Includes the System Wait definitions
 #include <sys/stat.h>       // Includes POSIX File Characteristics Library
+#include <sys/shm.h>
 #include <signal.h>         // Includes the Signal definitions
 #include <string.h>         // Includes the String Library
 

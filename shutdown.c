@@ -8,7 +8,8 @@
 /** \brief Programa responsável por finalizar a execução do escalonador postergado
  *  
  *  O programa "shutdown" trabalha recebendo o PID do escalonador postergado, por meio de uma fila de mensagens,
- *  e, com o PID, envia um sinal <b>SIGINT</b> para o escalonador.
+ *  e, com o PID, envia um sinal <b>SIGINT</b> para o escalonador. Após o envio do sinal para encerramento
+ *  da execução do escalonador, o programa irá acessar o arquivo "jobs.txt" e irá resetar o contador.
  *  
  *  O escalonador, por sua vez, trata o sinal, desviando a execução para rotina de tratamento que irá encerrar
  *  a execução do programa.
@@ -20,6 +21,7 @@
  *  \return 0;
  */
 int main(int argc, char *argv[]){
+    FILE *file;
     int msgqid, recebido;
     pid_packet p;
 
@@ -35,6 +37,10 @@ int main(int argc, char *argv[]){
     } else {                                                                                // If the message queue wasn't loaded
         printf("Error on getting the message queue...\n");                                  // Prints an error
     }
+
+    file = fopen("jobs.txt", "w+");                                                         // Opens the "jobs.txt" file
+    fputs("0", file);                                                                       // Resets the count
+    fclose(file);                                                                           // Closes the "jobs.txt" file
 
     exit(0);
 }

@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/signal.h>
+#include <sys/shm.h>
 
 #include "msgQueue.h"
 
@@ -27,7 +28,8 @@
  *  "execucao_postergada".
  * 
  *  O programa monta a mensagem contendo o nome do programa e o delay de execução e envia
- *  para a fila de mensagens para que o escalonador inicie o job.
+ *  para a fila de mensagens para que o escalonador inicie o job, acessa o arquivo "jobs.txt"
+ *  para ler o contador de jobs e, por fim, imprime a informação do job enviado para execução.
  *  
  *  Caso o identificador não seja obtido, o programa imprime um erro e encerra.Caso ocorra 
  *  um erro de envio, o programa informa com um print.
@@ -39,7 +41,9 @@
 int main(int argc, char *argv[]){
     int msgsdid = get_channel(MQ_SD);                                                       // Gets the message queue ID
     int msgsjid = get_channel(MQ_SJ);
-    int status, verify = 0;
+    int status, verify = 0, i = 0;
+    char count[10], newcount[10], ch;
+    FILE *file;
     msg_packet p;
     pid_packet ppkg;
 
@@ -62,7 +66,12 @@ int main(int argc, char *argv[]){
 
                 status = msgsnd(msgsjid, &p, sizeof(msg_packet)-sizeof(long), 0);           // Sends the message
                 if(status == 0){                                                            // After the message was sent
-                    printf("Message successfully sent!\n");
+                    file = fopen("jobs.txt", "r");                                          // Opens the jobs.txt file
+                    while((ch = fgetc(file)) != EOF)
+                        count[i++] = ch;                                                    // Reads the value of the counter
+                    fclose(file);                                                           // Closes the jobs.txt file
+                    printf("Job successfully sent!\n");
+                    printf("job=%d, arquivo=%s, delay=%d\n", atoi(count), p.name, p.delay);
                     kill(ppkg.pid, SIGUSR2);                                                // Sends a SIGUSR2 to the Scheduler
                 }
                 else{                                                                       // If there was an error on sending the message
@@ -79,6 +88,11 @@ int main(int argc, char *argv[]){
     } else {
         printf("Wrong number of arguments...\n");
     }
+
+    file = fopen("jobs.txt", "w+");
+    sprintf(newcount, "%d", atoi(count)+1);
+    fputs(newcount, file);
+    fclose(file);
 
     exit(0);
 }

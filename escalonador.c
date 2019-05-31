@@ -193,7 +193,7 @@ void delayed_scheduler(int managers){
                     pause();                                            // Pause execution until a new job arrives
             }
             else
-                break;
+                return;
         }
     }
     else{
@@ -204,12 +204,13 @@ void delayed_scheduler(int managers){
 /** \brief Escalonador de processos via estruturas Hypercube, Torus ou Fat Tree.
  *  
  *  A função principal do escalonador. Aqui ocorre toda a preparação para a execução do escalonador e de seus processos gerentes.
- *  A execução começa recebendo o parâmetro de estrutura (-h, -t ou -f). Feito isso, os canais de comunicação são criados - um para
- *  comunicação com o programa "execucao_postergada" e "shutdown", e outro para os processos gerentes. O escalonador envia duas mensagens 
- *  iniciais para comunicação com "execucao_postergada" e com o "shutdown". O escalonador verifica o tipo de estrutura que foi escolhido para 
- *  execução - hypercube, torus ou fat tree -, e cria os grafos ou a árvore simbólica dos nós gerentes.
+ *  A execução começa recebendo o parâmetro de estrutura (-h, -t ou -f). O arquivo "jobs.txt" é criado para guardar o contador de jobs
+ *  enviados (o propósito é para utilização do programa "execucao_postergada"). Feito isso, os canais de comunicação são criados - um para
+ *  comunicação com o programa "execucao_postergada" e "shutdown", outro para os processos gerentes e um terceiro exclusivo para envio dos jobs.
+ *  O escalonador envia mensagem inicial, contendo seu PID, para comunicação, via signals, com "execucao_postergada" ou com o "shutdown". O escalonador 
+ *  verifica o tipo de estrutura que foi escolhido para execução - hypercube, torus ou fat tree -, e cria os grafos ou a árvore simbólica dos nós gerentes.
  * 
- *  Após a criação das estruturas simbólicas, o escalonador realiza os N forks para criação dos processos gerentes. Para cada criação
+ *  Após a criação das estruturas simbólicas, o escalonador realiza os N forks para criação dos processos gerentes. Para cada chamada fork
  *  o PID do filho é armazenado em um vetor, o "_id" é atualizado para o próximo filho e, caso alguma chamada fork ocasione erro, os processos
  *  que já tenham sido criados são terminados enviando um SIGKILL a eles.
  * 
@@ -224,6 +225,7 @@ void delayed_scheduler(int managers){
  *  \param *argv[]; Argumentos passados na CLI
  */
 int main(int argc, char* argv[]){
+    FILE *file;
     pid_t *connections;
     int   _struct, _fork, _id = 0 , aux = 0;
     int msgsdid, msgsmid, msgsjid, status;
@@ -233,6 +235,9 @@ int main(int argc, char* argv[]){
     msg_packet *q;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
+    file = fopen("jobs.txt", "w+");
+    fputs("0", file);
+    fclose(file);
 
     /*
      * Checks if the scheduler was called with a argument.
@@ -271,7 +276,7 @@ int main(int argc, char* argv[]){
 
             msgsjid = create_channel(MQ_SJ);
             if(msgsmid >= 0)
-                printf("Scheduler-Jobs channel was created! Channel ID: %d\n", msgsmid);
+                printf("Scheduler-Jobs channel was created! Channel ID: %d\n", msgsjid);
             
             if(msgsmid < 0 || msgsdid < 0 || msgsjid < 0){
                 printf("Error while creating the queues. Terminating execution...\n");
@@ -347,13 +352,13 @@ int main(int argc, char* argv[]){
     }
 
     printf("\nClosing Scheduler-Managers channel...\n");
-    delete_channel(get_channel(MQ_SM));                                // Closes the first message queue
+    delete_channel(get_channel(MQ_SM));                                 // Closes the first message queue
     
     printf("\nClosing Scheduler-Delayed channel...\n");
-    delete_channel(get_channel(MQ_SD));                                // Closes the second message queue
+    delete_channel(get_channel(MQ_SD));                                 // Closes the second message queue
 
-    printf("\nClosing Scheduler-Jobs channel...\n");                   // Closes the third message queue
-    delete_channel(get_channel(MQ_SJ));
+    printf("\nClosing Scheduler-Jobs channel...\n");
+    delete_channel(get_channel(MQ_SJ));                                 // Closes the third message queue
 
     exit(0);
 }

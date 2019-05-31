@@ -5,6 +5,7 @@
 *.vscode/
 
 # program itself
+*.txt
 at
 es
 hello
