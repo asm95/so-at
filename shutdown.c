@@ -16,6 +16,9 @@
  * 
  *  Caso algum erro ocorra na recepção ou no envio, o usuário será avisado.
  * 
+ *  IMPORTANTE: O programa shutdown só deve ser executado se o escalonador não estiver executando um job ou se estiver
+ *  esperando para começar uma execução. Não utilize o comando caso exista uma execução em curso!
+ * 
  *  \param int argc; Número de argumentos passados na CLI
  *  \param char *argv[]; Argumentos passados na CLI
  *  \return 0;
