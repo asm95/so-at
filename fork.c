@@ -1,14 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h> // for exit
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <signal.h>
-#include <string.h> // for printf
-#include <time.h>
-
-#include <sys/ipc.h>
-#include <sys/msg.h>
+#include <stdio.h>  // for printf
+#include <unistd.h> // for getpid, fork
+#include <signal.h> // for signal, SIGINT
+#include <string.h> // for strcmp
 
 #include "common.h"
 #include "globals.h"
@@ -19,6 +12,9 @@
 #include "sch/master.h"
 #include "wrk/node.h"
 
+#define CLI_SW_HYPER "-h"
+#define CLI_SW_TORUS "-t"
+#define CLI_SW_FAT   "-f"
 
 void print_path(int *arr, int sz){
     for(int i=0; i<sz; i++){
@@ -29,7 +25,8 @@ void print_path(int *arr, int sz){
     }printf("\n");
 }
 
-// it's a global variable because signal handlers doesn't provide any parameters
+// global variables are acutally defined here
+// this mess all started when signal handlers didn't have arguments
 int pid_vec[NRO_PROC];
 int pid_id, real_pid, channel_id, do_exit = 0;
 int job_id = 0;
@@ -39,6 +36,13 @@ int finished_c = -2;
 
 job_node *job_l, *job_done_l = NULL;
 
+void route_print(msg_packet *p){
+    int idx = p->routing_idx;
+    for(; idx < 16; idx++){
+        printf("%d ", p->routing_path[idx]);
+    }
+    printf("\n");
+}
 
 void exit_handler_parent(int sig_id){
     // will shutdown all programs and print the report
@@ -51,14 +55,6 @@ void exit_handler_parent(int sig_id){
 void exit_handler_child(int sig_id){
     printf("(C%2d) Exiting child\n", pid_id);
     terminate_child(1);
-}
-
-void route_print(msg_packet *p){
-    int idx = p->routing_idx;
-    for(; idx < 16; idx++){
-        printf("%d ", p->routing_path[idx]);
-    }
-    printf("\n");
 }
 
 void close_channel(){
@@ -104,9 +100,6 @@ void bootstrap_app(to_types scheduler_topo){
     topology_clear(tp);
 }
 
-#define CLI_SW_HYPER "-h"
-#define CLI_SW_TORUS "-t"
-#define CLI_SW_FAT   "-f"
 
 to_types process_args(int argc, char* argv[]){
     // copycat from commit ea81598

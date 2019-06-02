@@ -235,6 +235,9 @@ void parent_manager(to_proxy *topo, int *pid_vec){
     // check if communication channel exists
     if (channel_id <= 0){
         printf("(%3s) Failed to create channel %d. Exiting...\n", "M", MQ_ID);
+        // issue #2: shutdown kill all children because they're still being created.
+        // maybe the last PID can send a signal to it's parent telling that he initated
+        // then the parent can initialize the shutdown routine
         shutdown(pid_vec);
         return;
     }
