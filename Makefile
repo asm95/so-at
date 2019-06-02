@@ -51,9 +51,9 @@ $(OBJ_DIR)/es.o: $(OBJ_DIR)/fork.o $(OBJ_DIR)/jobs.o $(OBJ_DIR)/node.o $(OBJ_DIR
 	ld -r $(OBJ_DIR)/fork.o $(OBJ_DIR)/jobs.o $(OBJ_DIR)/node.o $(OBJ_DIR)/master.o -o $(OBJ_DIR)/es.o
 
 
-$(BIN_DIR)/$(SERVER_NAME): $(OBJ_DIR) $(OBJ_DIR)/topology.o $(OBJ_DIR)/es.o
+$(BIN_DIR)/$(SERVER_NAME): $(OBJ_DIR) $(OBJ_DIR)/topology.o $(OBJ_DIR)/es.o $(OBJ_DIR)/msg.o
 	gcc $(OBJ_DIR)/topology.o \
-		$(OBJ_DIR)/msg.o $(OBJ_DIR)/msg_tests.o \
+		$(OBJ_DIR)/msg.o \
 		$(OBJ_DIR)/es.o \
 		$(OBJ_DIR)/log.o \
 		-o $(BIN_DIR)/$(SERVER_NAME)
