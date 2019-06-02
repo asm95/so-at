@@ -5,11 +5,12 @@ uma topologia escolhida pelo usuário.
 
 A execução será realizada por até 15 nós criados pelo escalonador.
 Cada nó executa o mesmo programa.
-Quando todos os nós finalizarem a execução, o escalonador estará pronto para
+Quando *todos* os nós finalizarem a execução, o escalonador estará pronto para
 receber outro programa.
 
 A topologia define quais conexões os nós farão entre si.
-Essas conexões permitem esses encaminharem mensagens por um caminho válido.
+Essas conexões permitem estes encaminharem mensagens entre eles
+por um caminho válido.
 
 Um caminho válido consiste em uma rota de um nó fonte para um destino respeitando
 as conexões estabelecidadas. Por exemplo, se existe um conexão entre (1,2) e (2,3),
@@ -44,17 +45,17 @@ por exemplo `make es` para compilar o escalonador.
 # substitua a variável pela topologia desejada:
 # -f = fat tree; -t = torus; -h = hipercubo
 export APP_TOPOLOGY=''
-./es $APP_TOPOLOGY
+./bin/es $APP_TOPOLOGY
 ```
 
 Por exemplo, para o torus fazemos:
 
 ```sh
 export APP_TOPOLOGY='-t'
-./es $APP_TOPOLOGY
+./bin/es $APP_TOPOLOGY
 
 # ou simplesmente
-./es -t
+./bin/es -t
 ```
 
 <span>2.</span> Utilizamos o comando at para requisitar o escalonador
@@ -68,19 +69,19 @@ export APP_DELAY=''
 # caso somente o nome do programa for fornecido (ex: 'hello')
 # o escalonador irá procura-lo na pasta onde ele foi iniciado
 export APP_PROG=''
-./at $APP_DELAY $APP_PROG
+./bin/at $APP_DELAY $APP_PROG
 ```
 
-Por exemplo, para executar o programa de exemplo 'hello' com delay de
-8 segundos:
+Por exemplo, para executar o programa de exemplo 'bin/hello' 
+com delay de 8 segundos:
 
 ```sh
 export APP_DELAY='5'
-export APP_PROG='hello'
-./at $APP_DELAY $APP_PROG
+export APP_PROG='bin/hello'
+./bin/at $APP_DELAY $APP_PROG
 
 # ou simplesmente:
-./at 5 hello
+./bin/at 5 bin/hello
 ```
 
 ### Contato
