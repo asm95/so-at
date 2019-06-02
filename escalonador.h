@@ -106,9 +106,9 @@ void execute_job();
 
     Professora: Dra. Alba Cristina Magalhães Alves de Melo
 
-    Aluno: Bernardo Costa Nascimento 140080279
+    Aluno: Bernardo Costa Nascimento 14/0080279
 
-    Aluno: Cristano
+    Aluno: Cristano Cardoso 15/0058349
 
     \section instrucoes_basicas Instruções Básicas
 
