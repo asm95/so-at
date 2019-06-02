@@ -4,8 +4,8 @@
  
 - Projeto de Sistemas Operacionais 1/2019
 - Professora: Dra. Alba Cristina Magalhães Alves de Melo
-- Aluno: Bernardo Costa Nascimento; 140080279
-- Aluno: Cristano
+- Aluno: Bernardo Costa Nascimento; 14/0080279
+- Aluno: Cristano Cardoso; 15/0058349
 
 ## Instruções Básicas
 
