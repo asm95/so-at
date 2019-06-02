@@ -164,19 +164,6 @@ void add_program(msg_packet *p, to_proxy *topo, int *finished_c, int current_job
     }
 }
 
-int route_walk(msg_packet *p){
-    // returns next node
-    int next_node_idx = p->routing_idx;
-    if (next_node_idx >= 16){
-        return -1; // routing reached it's destination
-    }
-    int next_node = p->routing_path[next_node_idx];
-    p->routing_idx += 1;
-    p->type = next_node + 1;
-
-    return next_node;
-}
-
 void spawn_program(msg_packet *p, to_proxy *topo){
     p->ac = AC_SP; // packet will ask for nodes to spawn a program
     int dest_node;

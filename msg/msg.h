@@ -44,4 +44,7 @@ int recv_packet(int msg_id, msg_packet *p);
 // new interface that is flexible
 int send_msg(int channel_id, msg_packet *p);
 
+// node process message forwaring
+int route_walk(msg_packet *p);
+
 #endif

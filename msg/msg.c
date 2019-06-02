@@ -55,3 +55,16 @@ int send_msg(int channel_id, msg_packet *p){
 int recv_packet(int msg_id, msg_packet *p){
     return msgrcv(msg_id, p, sizeof(msg_packet), 0x1, 0);
 }
+
+int route_walk(msg_packet *p){
+    // returns next node
+    int next_node_idx = p->routing_idx;
+    if (next_node_idx >= 16){
+        return -1; // routing reached it's destination
+    }
+    int next_node = p->routing_path[next_node_idx];
+    p->routing_idx += 1;
+    p->type = next_node + 1;
+
+    return next_node;
+}
