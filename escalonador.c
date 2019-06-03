@@ -206,8 +206,8 @@ void delayed_scheduler(int managers){
 /** \brief Escalonador de processos via estruturas Hypercube, Torus ou Fat Tree.
  *  
  *  A função principal do escalonador. Aqui ocorre toda a preparação para a execução do escalonador e de seus processos gerentes.
- *  A execução começa recebendo o parâmetro de estrutura (-h, -t ou -f). O arquivo "jobs.txt" é criado para guardar o contador de jobs
- *  enviados (o propósito é para utilização do programa "execucao_postergada"). Feito isso, os canais de comunicação são criados - um para
+ *  A execução começa recebendo o parâmetro de estrutura (-h, -t ou -f). A memória compartilhada é criada, e a variável "_jobs"
+ *  é "attached" a mesma e, por fim, inicializada para o valor 0. Feito isso, os canais de comunicação são criados - um para
  *  comunicação com o programa "execucao_postergada" e "shutdown", outro para os processos gerentes e um terceiro exclusivo para envio dos jobs.
  *  O escalonador envia mensagem inicial, contendo seu PID, para comunicação, via signals, com "execucao_postergada" ou com o "shutdown". O escalonador 
  *  verifica o tipo de estrutura que foi escolhido para execução - hypercube, torus ou fat tree -, e cria os grafos ou a árvore simbólica dos nós gerentes.
@@ -237,9 +237,6 @@ int main(int argc, char* argv[]){
     msg_packet *q;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
-    shmid = shmget(MQ_SJ, sizeof(int), IPC_CREAT | S_IWUSR | S_IRUSR);  // Creates a shared memory for the jobs count
-    _jobs = (int*)shmat(shmid, (void*)0, 0);                            // Attaches the jobs count to the shared memory area
-    *_jobs = 0;                                                         // Initializes the jobs count
 
     /*
      * Checks if the scheduler was called with a argument.
@@ -280,10 +277,15 @@ int main(int argc, char* argv[]){
             if(msgsmid >= 0)
                 printf("Scheduler-Jobs channel was created! Channel ID: %d\n", msgsjid);
             
-            if(msgsmid < 0 || msgsdid < 0 || msgsjid < 0){
-                printf("Error while creating the queues. Terminating execution...\n");
+            shmid = shmget(MQ_SJ, sizeof(int), IPC_CREAT | S_IWUSR | S_IRUSR);  // Creates a shared memory for the jobs count
+
+            if(msgsmid < 0 || msgsdid < 0 || msgsjid < 0 || shmid < 0){
+                printf("Error while creating the queues and shared memory. Terminating execution...\n");
                 exit(0);
             }
+
+            _jobs = (int*)shmat(shmid, (void*)0, 0);                    // Attaches the jobs count to the shared memory area
+            *_jobs = 0;                                                 // Initializes the jobs count
             
             if(strcmp(FAT, option) == 0){                               // Fat Tree structure was selected. 15 children!
                 _struct = FATCHILDS;                                    // Prepares for 15 manager processes

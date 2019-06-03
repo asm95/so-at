@@ -28,7 +28,7 @@
  *  "execucao_postergada".
  * 
  *  O programa monta a mensagem contendo o nome do programa e o delay de execução e envia
- *  para a fila de mensagens para que o escalonador inicie o job, acessa o arquivo "jobs.txt"
+ *  para a fila de mensagens para que o escalonador inicie o job, acessa a memória compartilhada
  *  para ler o contador de jobs e, por fim, imprime a informação do job enviado para execução.
  *  
  *  Caso o identificador não seja obtido, o programa imprime um erro e encerra.Caso ocorra 

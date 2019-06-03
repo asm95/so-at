@@ -9,7 +9,7 @@
  *  
  *  O programa "shutdown" trabalha recebendo o PID do escalonador postergado, por meio de uma fila de mensagens,
  *  e, com o PID, envia um sinal <b>SIGINT</b> para o escalonador. Após o envio do sinal para encerramento
- *  da execução do escalonador, o programa irá acessar o arquivo "jobs.txt" e irá resetar o contador.
+ *  da execução do escalonador.
  *  
  *  O escalonador, por sua vez, trata o sinal, desviando a execução para rotina de tratamento que irá encerrar
  *  a execução do programa.
