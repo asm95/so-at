@@ -16,6 +16,9 @@ Um caminho válido consiste em uma rota de um nó fonte para um destino respeita
 as conexões estabelecidadas. Por exemplo, se existe um conexão entre (1,2) e (2,3),
 e 1 deseja enviar uma mensagem para 3, então deve passar obrigatóriamente por 2.
 
+### Usuários de Windows
+O executa postegardo (at) e seus derivados (hello, e es) **não** funcionam em sistemas operativos Windows. Isto porque os programas utilizam chamada de sistema do Unix. É possível que o usuário possa rodar usando uma máquina virtual ou via [WSL](https://en.m.wikipedia.org/wiki/Windows_Subsystem_for_Linux) (Windows Subsystem for Linux).
+
 ### Instalação a partir do fonte (Linux)
 
 Realize a clonagem do repositório utilizando a ferramenta git:
@@ -85,6 +88,8 @@ export APP_PROG='bin/hello'
 ```
 
 ### Contato
+
+Caso tenha alguma dúvida, sugestão, crítica ao projeto, com relação às etapas de compilação e uso; segue o contato dos desenvolvedores.
 
 Cristiano Cardoso
 &lt; <a href="mailto:asm95@outlook.com">asm95@outlook.com</a> &gt;

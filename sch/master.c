@@ -68,7 +68,8 @@ void print_summary(job_node *job_done, job_node *job_pending){
 void shutdown(int pid_vec[]){
     // shutdown steps
     // breaks topology but kills the current executing processes
-    printf("(%3s) Shutdown process initiated\n", "M");
+    log_master(LOG_GRP_MASTER_INFO, "Shutdown process initiated");
+
     int status;
     for (int id=1; id < NRO_PROC; id++){
         // don't forget to do a waitpid on fork cus your process will turn into a zombie
@@ -139,20 +140,21 @@ void add_program(msg_packet *p, to_proxy *topo, int *finished_c, int current_job
     int list_sz = get_jl_sz(job_l);
 
     if (list_sz < 0){
-        printf("(%3s) Job list seems to be corruped. Please panic!\n", "(MW)");
+        log_master_war("Job list seems to be corruped. Please panic!");
         return;
     }
 
     if (p->delay < 0){
-        printf("(%3s) Bad packet received. Reason: delay < 0\n", "M");
+        log_master_war("Bad packet received. Reason: delay < 0");
         return;
     }
 
     unsigned int sch_t;
     sch_t = p->req_t + p->delay;
 
-    printf("(%3s) Enqueuing job %d...\n", "M", current_job_id);
-    printf("(%3s) Scheduled time is: %u\n", "M", sch_t);
+    log_master(LOG_GRP_JOBS, "Enqueuing job %d...", current_job_id);
+
+    log_master(LOG_GRP_JOBS, "Scheduled time is: %u", sch_t);
     job_node *el = create_job(sch_t, p->delay, p->prog_name);
     el->job_id = job_id;
     job_id += 1;
@@ -171,10 +173,10 @@ void spawn_program(msg_packet *p, to_proxy *topo){
         p->routing_idx = topology_search(topo, node_idx, p->routing_path, 16);
         dest_node = route_walk(p);
         if (dest_node <= 0){
-            printf("(%3s) Error on routing. Not a valid destination (%d)\n", "M", dest_node);
+            log_master(LOG_GRP_TOPOLOGY, "Error on routing. Not a valid destination (%d)", dest_node);
             continue;
         }
-        printf("(%3s) Sending packet to %d via %d\n", "M", node_idx, dest_node);
+        log_master(LOG_GRP_TOPOLOGY, "Sending packet to %d via %d", node_idx, dest_node);
         msgsnd(channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // block until sent
     }
 }
@@ -197,31 +199,38 @@ void dispatch_program(to_proxy *topo, int *jobs_exec_ord){
     push_front_jl(&job_done_l, el);
     finished_c = 0;
 
-    printf("(%3s) There are %d jobs waiting to be executed.\n", "M", list_sz);
+    log_master(LOG_GRP_JOBS, "There are %d jobs waiting to be executed.", list_sz);
 }
 
 void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
     switch(p->ac){
         case AC_FP:
-            printf("(%3s) Program finished from NID: 0x%02x\n", "M", p->pid_id);
+            log_master(LOG_GRP_TOPOLOGY, "Program finished from NID: 0x%02x", p->pid_id);
             *finished_c += 1;
             break;
         case AC_NP:
-            printf("(%3s) Received to execute new program '%s' in %d seconds\n", "M", p->prog_name, p->delay);
+            log_master(LOG_GRP_TOPOLOGY, "Received to execute new program '%s' in %d seconds", p->prog_name, p->delay);
             add_program(p, topo, finished_c, job_id);
             
         default: break;
     }
 }
 
+void master_config_logger(){
+    // always shows errors
+    log_set_enabled(LOG_GRP_MASTER_ERR, LOG_GRP_ENABLED);
+}
+
 void parent_manager(to_proxy *topo, int *pid_vec){
+    master_config_logger();
+
     log_master(LOG_GRP_DEFAULT, "Parent process (PID: %d)", pid_vec[0]);
 
     job_l = new_jl();
 
     // check if communication channel exists
     if (channel_id <= 0){
-        printf("(%3s) Failed to create channel %d. Exiting...\n", "M", MQ_ID);
+        log_master(LOG_GRP_MASTER_ERR, "Failed to create channel %d. Exiting...", MQ_ID);
         // issue #2: shutdown kill all children because they're still being created.
         // maybe the last PID can send a signal to it's parent telling that he initated
         // then the parent can initialize the shutdown routine

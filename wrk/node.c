@@ -143,7 +143,7 @@ void child_config_logger(){
     // logging: format PID ID in identifier
     sprintf(child_id, "C%2d", g_pid_id);
 
-    log_set_enabled(LOG_GRP_EXEC_PROG, LOG_GRP_ENABLED);
+    log_set_enabled(LOG_GRP_EXEC_PROG, LOG_GRP_DISABLED);
     log_set_enabled(LOG_GRP_CHILD_VERBOSE, LOG_GRP_DISABLED);
 }
 
