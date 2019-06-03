@@ -4,15 +4,17 @@
  
 - Projeto de Sistemas Operacionais 1/2019
 - Professora: Dra. Alba Cristina Magalhães Alves de Melo
-- Aluno: Bernardo Costa Nascimento; 140080279
-- Aluno: Cristano
+- Aluno: Bernardo Costa Nascimento; 14/0080279
+- Aluno: Cristano Cardoso; 15/0058349
 
 ## Instruções Básicas
 
 O presente trabalho é o desenvolvimento de um escalonador de execução postergada.
-Para compilar o projeto, basta executar o seguinte comando:
-
-> sh compile.sh
+Para compilar o projeto, basta executar os seguintes comandos:
+```sh
+chmod +x compile.sh
+sh compile.sh
+```
 
 A compilação irá gerar 4 executáveis com os seguintes nomes:
 
@@ -24,7 +26,7 @@ A compilação irá gerar 4 executáveis com os seguintes nomes:
 Para utilizar o sistema, basta executar o 'escalonador'. O programa deve ser iniciado
 com um dos três argumentos -h, -t ou -f, como exemplificador abaixo:
 
-> ./escalonador -h&
+> ./escalonador -h &
 
 O comando acima irá iniciar a execução do escalonador em modo background (&). Feito isso
 o usuário deve utilizar o programa execucao_postergada para passar algum programa para
