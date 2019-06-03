@@ -19,6 +19,11 @@ static int g_do_exit = 0;
 static int g_channel_id = -1;
 static int g_pid_id = -1;
 
+// formating children ID
+static char child_id[4];
+#define log_child(grp, fmt, ...)  log_node_grp(grp, child_id, fmt, __VA_ARGS__)
+
+
 int get_real_pid(){
     if (g_real_pid == -1){
         // have you ever heard about the singleton pattern?
@@ -59,7 +64,7 @@ void exec_program_from_file(msg_packet *p){
             sprintf(prog_name_buffer, "./%s", p->prog_name);
         }
         execlp(prog_name_buffer, p->prog_name, (char *)NULL);
-        printf("(C%2d) Could not execute '%s'\n", g_pid_id, p->prog_name);
+        log_child(LOG_GRP_EXEC_PROG, "Could not execute '%s'", g_pid_id, p->prog_name);
         exit(0); // case in error
     }
 }
@@ -134,7 +139,11 @@ void child_state_prog_running(to_proxy *topo){
 void child_manager(to_proxy *topo, int pid_id){
     g_pid_id = pid_id;
 
+    // logging: format PID ID in identifier
+    sprintf(child_id, "C%2d", g_pid_id);
+
     log_child(LOG_GRP_DEFAULT, "Initiated process (PID: %d)", g_pid_id, get_real_pid());
+
     topology_init(topo, pid_id);
 
     int rcv_ok = -1;

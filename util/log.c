@@ -1,6 +1,5 @@
 // for variadic functions
 #include <stdio.h> // for sprintf, vprintf
-#include <stdarg.h>
 
 #include "log.h"
 
