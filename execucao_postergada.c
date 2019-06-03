@@ -39,8 +39,8 @@
  *  \return int;
  */
 int main(int argc, char *argv[]){
-    int msgsdid = get_channel(MQ_SD);                                                       // Gets the message queue ID
-    int msgsjid = get_channel(MQ_SJ);
+    int msgsdid = get_channel(MQ_SD);                                                       // Gets the PID communication message queue ID
+    int msgsjid = get_channel(MQ_SJ);                                                       // Gets the Jobs sender message queue ID
     int shmid   = shmget(MQ_SJ, sizeof(int), S_IRUSR);
     int status, verify = 0;
     int *_jobs;
@@ -66,11 +66,11 @@ int main(int argc, char *argv[]){
 
                 status = msgsnd(msgsjid, &p, sizeof(msg_packet)-sizeof(long), 0);           // Sends the message
                 if(status == 0){                                                            // After the message was sent                                                         // Closes the jobs.txt file
-                    _jobs = (int*)shmat(shmid, (void*)0, 0);
+                    _jobs = (int*)shmat(shmid, (void*)0, 0);                                // Attaches the shared memory to the jobs count
                     printf("Job successfully sent!\n");
                     printf("job=%d, arquivo=%s, delay=%d\n", *_jobs, p.name, p.delay);
                     kill(ppkg.pid, SIGUSR2);                                                // Sends a SIGUSR2 to the Scheduler
-                    shmdt(_jobs);
+                    shmdt(_jobs);                                                           // Dettaches the shared memory of the jobs count
                 }
                 else{                                                                       // If there was an error on sending the message
                     printf("Error while sending message...\n");

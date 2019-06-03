@@ -355,8 +355,8 @@ int main(int argc, char* argv[]){
         free(q);                                                        // Frees the message data
     }
 
-    shmdt(_jobs);
-    shmctl(shmid, IPC_RMID, NULL);
+    shmdt(_jobs);                                                       // Dettaches the shared memory of the jobs count
+    shmctl(shmid, IPC_RMID, NULL);                                      // Removes the shared memory
 
     printf("\nClosing Scheduler-Managers channel...\n");
     delete_channel(get_channel(MQ_SM));                                 // Closes the first message queue
