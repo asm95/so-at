@@ -24,7 +24,6 @@
  *  \return 0;
  */
 int main(int argc, char *argv[]){
-    FILE *file;
     int msgqid, recebido;
     pid_packet p;
 
@@ -40,10 +39,6 @@ int main(int argc, char *argv[]){
     } else {                                                                                // If the message queue wasn't loaded
         printf("Error on getting the message queue...\n");                                  // Prints an error
     }
-
-    file = fopen("jobs.txt", "w+");                                                         // Opens the "jobs.txt" file
-    fputs("0", file);                                                                       // Resets the count
-    fclose(file);                                                                           // Closes the "jobs.txt" file
 
     exit(0);
 }

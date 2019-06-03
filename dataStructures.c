@@ -1,13 +1,13 @@
 #include "dataStructures.h"
 
-//! Contador de jobs executados
-int _jobs = 0;
+// //! Contador de jobs executados
+// int _jobs = 0;
 
 void createQueue(execq **queue){
     *queue = NULL;
 }
 
-void insertProcess(execq **queue, char *_name, int _delay){
+void insertProcess(execq **queue, char *_name, int _delay, int _jobs){
     execq *q1, *q2;
 
     q1 = malloc(sizeof(execq));

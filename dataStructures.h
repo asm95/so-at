@@ -108,7 +108,7 @@ void createQueue(execq **queue);
  *  \param int _delay; Delay, em segundos, para execução do job;
  *  \return void;
  */
-void insertProcess(execq **queue, char *_name, int _delay);
+void insertProcess(execq **queue, char *_name, int _delay, int _jobs);
 
 /** \fn void removeProcess(execq **queue)
  *  \brief Remove um job da lista.

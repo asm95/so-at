@@ -51,6 +51,8 @@ int finish = 0;
 pid_t *pids;
 //! Fila de gerentes prontos para executar
 manq *_ready;
+//! Contador de jobs executados
+int *_jobs;
 
 void shutdown(){
     system("clear");                                                    // Clears the screen
@@ -86,7 +88,7 @@ void new_schedule(){
                 alarm(_alarm);                                          // Sets a alarm with _alarm
             }
             
-            insertProcess(&eq, p->name, p->delay);                      // Job is inserted to the queue
+            insertProcess(&eq, p->name, p->delay, (*_jobs)++);          // Job is inserted to the queue
             if(eq->prox != NULL)
                 updateDelays(&eq);                                      // Updates the delay if there are more than one job to be executed
             printf("\n");
@@ -225,19 +227,19 @@ void delayed_scheduler(int managers){
  *  \param *argv[]; Argumentos passados na CLI
  */
 int main(int argc, char* argv[]){
-    FILE *file;
+    // FILE *file;
     pid_t *connections;
     int   _struct, _fork, _id = 0 , aux = 0;
-    int msgsdid, msgsmid, msgsjid, status;
+    int msgsdid, msgsmid, msgsjid, shmid, status;
     fTree *ft;
     hyperTorus *ht;
     pid_packet *ppkg;
     msg_packet *q;
 
     option = argv[1];                                                   // Receives the Scheduler struct type
-    file = fopen("jobs.txt", "w+");
-    fputs("0", file);
-    fclose(file);
+    shmid = shmget(MQ_SJ, sizeof(int), IPC_CREAT | S_IWUSR | S_IRUSR);  // Creates a shared memory for the jobs count
+    _jobs = (int*)shmat(shmid, (void*)0, 0);                            // Attaches the jobs count to the shared memory area
+    *_jobs = 0;                                                         // Initializes the jobs count
 
     /*
      * Checks if the scheduler was called with a argument.
@@ -350,6 +352,9 @@ int main(int argc, char* argv[]){
         wait(&status);                                                  // Waits for the nth-Manager to be shutdown
         free(q);                                                        // Frees the message data
     }
+
+    shmdt(_jobs);
+    shmctl(shmid, IPC_RMID, NULL);
 
     printf("\nClosing Scheduler-Managers channel...\n");
     delete_channel(get_channel(MQ_SM));                                 // Closes the first message queue

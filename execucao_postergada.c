@@ -41,9 +41,9 @@
 int main(int argc, char *argv[]){
     int msgsdid = get_channel(MQ_SD);                                                       // Gets the message queue ID
     int msgsjid = get_channel(MQ_SJ);
-    int status, verify = 0, i = 0;
-    char count[10], newcount[10], ch;
-    FILE *file;
+    int shmid   = shmget(MQ_SJ, sizeof(int), S_IRUSR);
+    int status, verify = 0;
+    int *_jobs;
     msg_packet p;
     pid_packet ppkg;
 
@@ -65,14 +65,12 @@ int main(int argc, char *argv[]){
                 p.delay = atoi(argv[2]);                                                    // Copies delay
 
                 status = msgsnd(msgsjid, &p, sizeof(msg_packet)-sizeof(long), 0);           // Sends the message
-                if(status == 0){                                                            // After the message was sent
-                    file = fopen("jobs.txt", "r");                                          // Opens the jobs.txt file
-                    while((ch = fgetc(file)) != EOF)
-                        count[i++] = ch;                                                    // Reads the value of the counter
-                    fclose(file);                                                           // Closes the jobs.txt file
+                if(status == 0){                                                            // After the message was sent                                                         // Closes the jobs.txt file
+                    _jobs = (int*)shmat(shmid, (void*)0, 0);
                     printf("Job successfully sent!\n");
-                    printf("job=%d, arquivo=%s, delay=%d\n", atoi(count), p.name, p.delay);
+                    printf("job=%d, arquivo=%s, delay=%d\n", *_jobs, p.name, p.delay);
                     kill(ppkg.pid, SIGUSR2);                                                // Sends a SIGUSR2 to the Scheduler
+                    shmdt(_jobs);
                 }
                 else{                                                                       // If there was an error on sending the message
                     printf("Error while sending message...\n");
@@ -88,11 +86,6 @@ int main(int argc, char *argv[]){
     } else {
         printf("Wrong number of arguments...\n");
     }
-
-    file = fopen("jobs.txt", "w+");
-    sprintf(newcount, "%d", atoi(count)+1);
-    fputs(newcount, file);
-    fclose(file);
 
     exit(0);
 }
