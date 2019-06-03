@@ -8,6 +8,7 @@
 #include <sys/wait.h> // for wait, WNOHANG
 #include <sys/msg.h> // for msgsnd, msgrcv
 
+#include "../util/log.h"
 #include "../msg/msg.h" // for msg_packet
 #include "node.h"
 
@@ -29,6 +30,7 @@ int get_real_pid(){
 
 int terminate_child(int term_status){
     g_do_exit = term_status;
+    return term_status;
 }
 
 void exec_program_mock(){
@@ -72,11 +74,12 @@ void exec_program(msg_packet *p){
 void process_packet(msg_packet *p, to_proxy *topo){
     int next_node = route_walk(p);
     if (next_node >= 0){
-        printf("(C%2d) Packet is for %d\n", g_pid_id, next_node);
+        log_child(LOG_GRP_TOPOLOGY_CHILD, "Packet is for %d", g_pid_id, next_node);
+
         msgsnd(g_channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // forward packet
     } else
     if (next_node == -1){
-        printf("(C%2d) Packet is for me!\n", g_pid_id);
+        log_child(LOG_GRP_TOPOLOGY_CHILD, "Packet is for me!", g_pid_id);
         if (p->ac == AC_SP){
             printf("(C%2d) Message for spawn program named '%s'\n", g_pid_id, p->prog_name);
             exec_program(p);
@@ -131,7 +134,7 @@ void child_state_prog_running(to_proxy *topo){
 void child_manager(to_proxy *topo, int pid_id){
     g_pid_id = pid_id;
 
-    printf("(C%2d) Initiated process (PID: %d)\n", pid_id, get_real_pid());
+    log_child(LOG_GRP_DEFAULT, "Initiated process (PID: %d)", g_pid_id, get_real_pid());
     topology_init(topo, pid_id);
 
     int rcv_ok = -1;
