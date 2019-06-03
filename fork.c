@@ -6,6 +6,7 @@
 #include "common.h"
 #include "globals.h"
 
+#include "util/log.h"
 #include "topology.h"
 #include "msg/msg.h"
 #include "sch/jobs.h"
@@ -71,6 +72,9 @@ void bootstrap_app(to_types scheduler_topo){
 
     to_proxy *tp = topology_create(scheduler_topo);
     channel_id = create_channel();
+    
+    log_init();
+    log_set_enabled(LOG_GRP_DEFAULT, LOG_GRP_ENABLED);
 
     int pid;
     // 0 is the master node itself

@@ -215,7 +215,7 @@ void process_packet_master(msg_packet *p, to_proxy *topo, int *finished_c){
 }
 
 void parent_manager(to_proxy *topo, int *pid_vec){
-    log_master("Parent process (PID: %d)", pid_vec[0]);
+    log_master(LOG_GRP_DEFAULT, "Parent process (PID: %d)", pid_vec[0]);
 
     job_l = new_jl();
 
@@ -234,7 +234,7 @@ void parent_manager(to_proxy *topo, int *pid_vec){
 
     msg_packet p;
 
-    log_master("Waiting for messages on %d", channel_id);
+    log_master(LOG_GRP_DEFAULT, "Waiting for messages on %d", channel_id);
     int rcv_ok;
     while(! do_exit){
         // printf("(%3s) Value of finished_c is %d...\n", "M", finished_c);
@@ -242,7 +242,7 @@ void parent_manager(to_proxy *topo, int *pid_vec){
             // means we're waiting for children nodes to finish
             if (finished_c == NRO_PROC-1){
                 // if everyone finished, then we reset the counter
-                log_master("Waiting for new processes");
+                log_master(LOG_GRP_DEFAULT, "Waiting for new processes");
                 on_job_finished(job_done_l);
                 // checks the list for the next job in the queue
                 check_job_queue(topo);
