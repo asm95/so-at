@@ -21,7 +21,7 @@ static int g_pid_id = -1;
 
 // formating children ID
 static char child_id[4];
-#define log_child(grp, fmt, ...)  log_node_grp(grp, child_id, fmt, __VA_ARGS__)
+#define log_child(grp, fmt, ...) log_node_grp(grp, child_id, fmt, __VA_ARGS__)
 
 
 int get_real_pid(){
@@ -62,9 +62,12 @@ void exec_program_from_file(msg_packet *p){
         // in the current directory
         if (strncmp(p->prog_name, "./", 2) != 0 && p->prog_name[0] != '/'){
             sprintf(prog_name_buffer, "./%s", p->prog_name);
+        } else {
+            sprintf(prog_name_buffer, "%s", p->prog_name);
         }
+        log_child(LOG_GRP_CHILD_VERBOSE, "real prog name: %s\n", prog_name_buffer);
         execlp(prog_name_buffer, p->prog_name, (char *)NULL);
-        log_child(LOG_GRP_EXEC_PROG, "Could not execute '%s'", g_pid_id, p->prog_name);
+        log_child(LOG_GRP_EXEC_PROG, "Could not execute '%s'", p->prog_name);
         exit(0); // case in error
     }
 }
@@ -79,14 +82,14 @@ void exec_program(msg_packet *p){
 void process_packet(msg_packet *p, to_proxy *topo){
     int next_node = route_walk(p);
     if (next_node >= 0){
-        log_child(LOG_GRP_TOPOLOGY_CHILD, "Packet is for %d", g_pid_id, next_node);
+        log_child(LOG_GRP_TOPOLOGY_CHILD, "Packet is for %d", next_node);
 
         msgsnd(g_channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // forward packet
     } else
     if (next_node == -1){
-        log_child(LOG_GRP_TOPOLOGY_CHILD, "Packet is for me!", g_pid_id);
+        log_child(LOG_GRP_TOPOLOGY_CHILD, "Packet is for me! (%d)", g_pid_id);
         if (p->ac == AC_SP){
-            printf("(C%2d) Message for spawn program named '%s'\n", g_pid_id, p->prog_name);
+            log_child(LOG_GRP_EXEC_PROG, "Message for spawn program named '%s'", p->prog_name);
             exec_program(p);
         }
     }
@@ -97,7 +100,7 @@ void child_state_wait_msg(to_proxy *topo){
     msg_packet p;
 
     while(! g_do_exit && g_child_state == 0){
-        printf("(C%2d) Listining to slot 0x%02x on channel %d...\n", g_pid_id, g_pid_id+1, g_channel_id);
+        log_child(LOG_GRP_TOPOLOGY_CHILD, "Listining to slot 0x%02x on channel %d...", g_pid_id+1, g_channel_id);
         rcv_ok = msgrcv(g_channel_id, &p, sizeof(msg_packet) - sizeof(long), g_pid_id+1, 0); // block
         if (rcv_ok > 0){
             process_packet(&p, topo);
@@ -113,7 +116,7 @@ void send_prog_finished(msg_packet *p, to_proxy *topo){
     p->ac = AC_FP;
     p->pid_id = g_pid_id;
     next_node = route_walk(p); // check which node should I send first
-    printf("(C%2d) Sending AC_FP to master via %d\n", g_pid_id, next_node);
+    log_child(LOG_GRP_TOPOLOGY_CHILD, "Sending AC_FP to master via %d", next_node);
     msgsnd(g_channel_id, p, sizeof(msg_packet) - sizeof(long), 0); // forward packet
 }
 
@@ -136,13 +139,20 @@ void child_state_prog_running(to_proxy *topo){
     }
 }
 
-void child_manager(to_proxy *topo, int pid_id){
-    g_pid_id = pid_id;
-
+void child_config_logger(){
     // logging: format PID ID in identifier
     sprintf(child_id, "C%2d", g_pid_id);
 
-    log_child(LOG_GRP_DEFAULT, "Initiated process (PID: %d)", g_pid_id, get_real_pid());
+    log_set_enabled(LOG_GRP_EXEC_PROG, LOG_GRP_ENABLED);
+    log_set_enabled(LOG_GRP_CHILD_VERBOSE, LOG_GRP_DISABLED);
+}
+
+void child_manager(to_proxy *topo, int pid_id){
+    g_pid_id = pid_id;
+
+    child_config_logger();
+
+    log_child(LOG_GRP_CHILD_INFO, "Initiated process (PID: %d)", get_real_pid());
 
     topology_init(topo, pid_id);
 
